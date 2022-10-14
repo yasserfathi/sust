@@ -1,0 +1,130 @@
+<?php
+
+namespace App\Http\Controllers\admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\Gallery;
+
+class GalleryController extends Controller
+{
+    public function index()
+	{
+		dd(_COOKIE);
+		$data = Gallery::get();
+		return view('admin.gallery')->with('data', $data);
+	}
+	
+	public function store(Request $request)
+	{
+		$img_path = '';
+		if($request->hasFile('img')) {
+			if($request->file('img')->isValid()) {
+				try {
+					$file = $request->file('img');
+					$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
+					$img_path = $file->storeAs('images', $filename);
+				} catch (\Illuminate\Filesystem\FileNotFoundException $e){
+					return $e;
+				}
+			}
+		}
+		Gallery::insert(array('gallery_desc_ar'  =>  \DB::raw('"'.$request->descar.'"'),'gallery_desc_en'  =>  \DB::raw('"'.$request->descen.'"'),
+					'gallery_img' =>   \DB::raw('"'.$img_path.'"')));
+		 return "success";
+	}
+	
+	public function show(Request $request,$id)
+	{
+		$edit_data = Gallery::whereColumn([['gallery_id', '=', \DB::raw('"'.$id.'"')]])->first();
+		if($edit_data != '')
+		{
+			$data = Gallery::get();
+			return view('admin.gallery')->with('data', $data)->with('edit_data',$edit_data);
+		}
+		else
+		return redirect()->route('gallery_index');
+	}
+	
+	public function update(Request $request)
+	{
+		$arr = array('gallery_desc_ar' =>   \DB::raw('"'.$request->descar.'"'),'gallery_desc_en' => \DB::raw('"'.$request->descen.'"'));
+		$docs = Gallery::select('gallery_img')->whereColumn([['gallery_id', '=', \DB::raw('"'. $request->id.'"')]])->get();
+		if($request->hasFile('img')){
+			if($request->file('img')->isValid()) {
+				try {
+					$file = $request->file('img');
+					$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
+					$img_path = $file->storeAs('images', $filename);
+					if($docs[0]->gallery_img != ''){ Storage::delete($docs[0]->gallery_img); }
+					$arr['gallery_img'] = \DB::raw('"'.$img_path.'"');
+				} catch (Illuminate\Filesystem\FileNotFoundException $e){}
+			}
+		}
+		Gallery::where('gallery_id', \DB::raw('"'.$request->id.'"'))->update($arr);
+		return "success";
+	}
+	
+	public function destroy(Request $request,$id)
+	{
+		$docs = Gallery::select('gallery_img')->whereColumn([['gallery_id', '=', \DB::raw('"'. $request->id.'"')]])->get();
+		if(count($docs) != 0)
+		{
+			if($docs[0]->gallery_img != ''){ Storage::delete($docs[0]->gallery_img); }
+			Gallery::where('gallery_id', \DB::raw('"'.$request->id.'"'))->delete();
+		}
+		return redirect()->route('gallery_index');
+	}
+	
+	public function choose(Request $request)
+	{
+		$output = '';
+		if($request->img !='')
+		{
+			$path = $request->img;
+			if($request->imgchk == 'true')
+			{
+				$checked = 1;
+			}
+			else
+			{
+				$checked = 0;
+			}
+			$arr = array('gallery_flag' => $checked);
+			/*\DB::enableQueryLog();
+			Gallery::where('gallery_img','like', '%'.$path.'%')->update($arr);
+			$query = \DB::getQueryLog();
+			print_r($query);*/
+			Gallery::where('gallery_img','like', '%'.$path.'%')->update($arr);
+ 			//==================================================
+			$result = Gallery::orderBy('gallery_flag', 'DESC')->get();
+			$output ='<ul class="grid cs-style-3">';
+					$index = 0;
+					foreach($result as $key)
+					{
+						$img = $key->gallery_img;
+						if($index == 0) { $output.= '<div class="row" style="direction:rtl">';}
+							$output.= '<li class="col-md-4 img-thumbnail">
+								<figure class="img-responsive">
+									<img src="'.url('/storage/app/').'/'.$img.'" class="gallery-img" style="height:170px;width:100%" >
+									<figcaption>
+									<a href="'.url('/show/').'/'.$key->gallery_id.'" class="btn btn-sm btn-primary">تعديل <i class="fa fa-pencil"></i></a>
+									<a href="#" data-href="'.url('/destroy/').'/'.$key->gallery_id.'" id="'.$key->gallery_id.'" data-toggle="modal" data-target="#confirm-delete" class="btn btn-sm btn-danger" style="right:50%">حذف <i class="fa fa-trash-o"></i></a>
+									</figcaption>
+								</figure>
+								<label class="checkbox ios7-switch" style="padding:0;right:30%;top:10px">
+									<input class="enbl" id="'.substr($img,7,-4).'" type="checkbox"';
+									if($key->gallery_flag == '1') $output.= 'checked';
+									$output.='>
+									<span></span>
+								</label>
+							</li>';
+							$index++;
+							if($index == 3) {$output.= '</div>'; $index = 0; }
+					}
+			$output.='</ul>';
+		}
+		echo $output;
+	}
+	
+}
