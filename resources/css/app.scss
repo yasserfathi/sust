@@ -1,0 +1,99 @@
+$font-family: "Cairo", "Roboto", sans-serif;
+
+@use 'vuetify/settings' with (
+  $body-font-family: $font-family,
+  $list-item-action-margin-end:2px,
+  $list-item-padding: 12px 16px,
+  // $button-font-size: 0.85em,
+  $button-icon-font-size: 2rem,
+);
+
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+html, body, #app {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: $font-family;
+  font-size: 14px; /* Reduced from medium for a more professional dashboard look */
+  line-height: 1.6;
+}
+
+.v-application, .v-application [class*='text-'], .v-btn, .v-toolbar-title, .v-list-item-title, .v-list-item-subtitle {
+  font-family: $font-family !important;
+  font-size: 14px;
+}
+
+.v-table>.v-table__wrapper>table>tbody>tr>th,
+.v-table>.v-table__wrapper>table>thead>tr>th,
+.v-table>.v-table__wrapper>table>tfoot>tr>th {
+    font-weight: bold;
+}
+
+.v-card-actions {
+    direction: ltr
+}
+
+.swal2-container {
+    direction: rtl
+}
+
+.swal2-actions{
+  color: #fff;
+}
+
+.v-field__input {
+    font-size: 0.85em
+}
+
+a, a:link, a:visited, a:active {
+  color: #d65440;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.v-overlay {
+    z-index: 1050 !important;
+}
+
+.v-list-item {
+  padding-inline-start: 14px !important;
+}
+
+.v-list-item__prepend {
+  margin-inline-start: 0 !important;
+  display: block !important;
+}
+
+.v-list-group__items,.v-list-item__content {
+  --indent-padding: 15px !important;
+}
+
+/* SweetAlert2 button styling */
+.swal2-confirm {
+  background-color: #198754 !important;
+}
+
+.swal2-cancel {
+  background-color: #d33 !important;
+}
+
+.v-data-table-footer {
+  display: flex;
+  justify-content: center;
+  font-size: small;
+  flex-direction: row-reverse;
+}
+
+body::-webkit-scrollbar {
+  width: 8px;
+}
+body::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 4px;
+}
+body::-webkit-scrollbar-track {
+  background: transparent;
+}

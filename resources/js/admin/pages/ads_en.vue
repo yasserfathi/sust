@@ -1,0 +1,419 @@
+<template>
+  <v-container>
+    <v-card>
+      <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="اعلانات الجامعة باللغة الانجليزية"
+        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @change-priority="changePriority"
+        @close="close" :fullscreen="fullscreen" transition="dialog-bottom-transition">
+        <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
+          <v-row>
+            <v-col cols="12" class="pt-0">
+              <v-text-field id="title" name="title" label="عنوان الاعلان" v-model="title" variant="underlined"
+                class="text-caption" prepend-icon="mdi-bank" :error-messages="errors.title"></v-text-field>
+            </v-col>
+            <v-col cols="12" md="6" class="pt-0">
+              <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getAlbums($event)"
+                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+            </v-col>
+            <v-col cols="12" md="6" class="pt-0">
+              <date-picker label="تاريخ الاعلان" id="ad_date" name="ad_date" v-model="ad_date"
+                :error-messages="errors.ad_date"></date-picker>
+            </v-col>
+            <v-col cols="6" class="pt-0">
+              <v-text-field id="duration" name="duration" label="عدد أيام عرض الاعلان" v-model="duration"
+                variant="underlined" class="text-caption" prepend-icon="mdi-bank"
+                :error-messages="errors.duration"></v-text-field>
+            </v-col>
+            <v-col cols="12" :md="filePath != undefined ? 5 : 6" class="pt-0">
+              <v-file-input type="file" id="file" name="file" ref="fileInput" show-size @change="onSelectFile" chips
+                label="اختر الملف  المرفق" accept='.dox,.docx,.pdf' variant="underlined"
+                :error-messages="errors.file"></v-file-input>
+            </v-col>
+            <v-col v-if="filePath != undefined" cols="12" md="1" class="pt-7">
+              <a :href="BASE_URL + filePath" class="text-subtitle-2">الملف الحالي<v-icon
+                  icon="mdi-file-document"></v-icon></a>
+            </v-col>
+            <v-col cols="12">
+              <v-select id="album_id" name="album_id" :disabled="disabled" class="mb-5" :items="albums"
+                density="comfortable" item-title="title" item-value="id" prepend-icon="mdi-bank" v-model="album_id"
+                @update:modelValue="getAlbumPhotos($event)" label="البومات الصور" :error-messages="errors.album_id"
+                variant="underlined"></v-select>
+              <v-dialog v-model="showImage" width="800">
+                <v-card>
+                  <v-card-text class="pa-3">
+                    <v-img :src="photo" :lazy-src="photo"></v-img>
+                    <div class="text-body-1 mt-2">{{ photoDesc }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-dialog>
+              <v-dialog v-model="showAlbum" persistent>
+                <v-card class="mx-auto bg-grey-lighten-4" v-if="album_photos.length > 0">
+                  <v-container fluid>
+                    <v-row dense>
+                      <v-col cols="12" class="mb-4">
+                        <div class="text-red-darken-3">صور البوم - {{ album_title }}</div>
+                      </v-col>
+                      <v-col cols="2" v-for="(element, index) in album_photos" :key="index" class="pa-0">
+                        <v-img :src="BASE_URL + element.thumb_photo" :lazy-src="BASE_URL + element.thumb_photo"
+                          class="align-end" aspect-ratio="4/3" cover style="cursor: pointer"
+                          @click="showModal(element.photo, element.title)">
+                          <template v-slot:placeholder>
+                            <v-row class="fill-height ma-0" align="center" justify="center">
+                              <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
+                            </v-row>
+                          </template>
+                        </v-img>
+                        <v-checkbox id="active" name="active" hide-details v-model="thumb_photos"
+                          :value="element.thumb_photo" color="#198754" class="mr-8">
+                          <v-tooltip activator="parent" location="top">اضافة الصورة للخبر</v-tooltip>
+                        </v-checkbox>
+                      </v-col>
+                      <v-col cols="12">
+                        <v-btn block color="green-darken-1" variant="elevated" type="submit"
+                          @click="showAlbum = false, album_id = 0" ripple rounded="xl">
+                          موافق
+                        </v-btn>
+                      </v-col>
+                    </v-row>
+                  </v-container>
+                </v-card>
+              </v-dialog>
+              <v-card class="mx-auto mt-4 bg-grey-lighten-4" v-if="photos.length > 0">
+                <v-container fluid>
+                  <v-row dense>
+                    <v-col cols="12" class="mb-4">
+                      <div class="text-red-darken-3">الصور المضافة لمحتوى الاعلان</div>
+                    </v-col>
+                    <v-col cols="1" v-for="(element, index) in photos" :key="index" style="position: relative">
+                      <v-btn style="position: absolute;z-index: 5;left:-2px;top: -5px;min-width:1px" fab size="x-small"
+                        color="red" rounded="xl" @click="item = element.thumb_photo, itemType = 'photo', dialog = true">
+                        <v-icon icon="mdi-close"></v-icon>
+                        <v-tooltip activator="parent" location="top">حذف</v-tooltip>
+                      </v-btn>
+                      <v-img :src="BASE_URL + element.thumb_photo" :lazy-src="BASE_URL + element.thumb_photo"
+                        class="align-end" aspect-ratio="4/3" cover style="cursor: pointer"
+                        @click="showModal(element.photo, element.title)">
+                        <template v-slot:placeholder>
+                          <v-row class="fill-height ma-0" align="center" justify="center">
+                            <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
+                          </v-row>
+                        </template>
+                      </v-img>
+                    </v-col>
+                  </v-row>
+                </v-container>
+              </v-card>
+            </v-col>
+            <v-col cols="12">
+              <v-text-field type="text" label="الكلمات المفتاحية" v-model="textBox" variant="underlined"
+                @keyup.enter="addKeyWords" prepend-icon="mdi-bank" v-click-outside="addKeyWords"
+                :error-messages="errors.textBox">
+                <template v-slot:append>
+                  <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
+                </template>
+              </v-text-field>
+              <span v-for="(chipText, index) in chipData" :key="index" class="ma-1 w-100"><v-chip class="ma-2"
+                  color="success" :model-value="true">{{ chipText }} <v-icon class="mr-2"
+                    @click="item = chipText, itemType = 'KeyWord', dialog = true">mdi-trash-can-outline</v-icon></v-chip></span>
+            </v-col>
+            <v-divider></v-divider>
+            <v-col cols="12" class="mt-1">
+              <v-text-field name="detail_portion" variant="underlined" label="جزء من المحتوى" v-model="detail_portion"
+                :error-messages="errors.detail_portion" prepend-icon="mdi-bank"></v-text-field>
+            </v-col>
+            <v-col cols="12" class="pt-0 mt-0">
+              <p class="font-weight-medium mb-2"><v-icon>mdi-plus</v-icon> تفاصيل الاعلان</p>
+              <Editor v-model="detail" />
+              <span style="color:#ba0061;font-size: 12px;">{{ errors.detail }}</span>
+            </v-col>
+            <v-col cols="12" class="pt-0 mt-0">
+              <v-switch :label="`نشر الاعلان`" id="active" name="active" v-model="active" hide-details ripple
+                color="#198754"></v-switch>
+            </v-col>
+          </v-row>
+        </Form>
+      </Table>
+    </v-card>
+  </v-container>
+  <v-dialog v-model="dialog" width="350">
+    <v-card style="height:160px;">
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" class="text-center">
+            تأكيد عملية الحذف ؟
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" class="mx-1">
+            <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
+          </v-col>
+        </v-row>
+        <v-row>
+          <v-col cols="12" class="pt-0">
+            <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
+  </v-dialog>
+</template>
+<script lang="ts" setup>
+import { defineAsyncComponent, toRaw, watch } from 'vue'
+const Table = defineAsyncComponent(() => import('../components/Table.vue'))
+const Editor = defineAsyncComponent(() => import('../components/Editor.vue'))
+const datePicker = defineAsyncComponent(() => import('../components/DatePicker.vue'))
+import { Form, useField, useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod';
+import { z as zod } from 'zod';
+import { nextTick, onBeforeMount, ref } from 'vue';
+import axios from 'axios';
+
+const url = route('ads_en.index')
+const headers = [
+  { title: 'عنوان الاعلان', key: 'title', width: 200 },
+  { title: 'اسم الكلية', key: 'college.name', align: 'center' },
+  { title: 'تاريخ الاعلان', key: 'ad_date' },
+  { title: 'نشر الاعلان', key: 'active', sortable: false },
+  { title: 'أولوية نشر الاعلان', key: 'priority', sortable: false },
+  { title: '', key: 'actions', value: 'id', sortable: false },
+];
+
+const table = ref();
+interface FormFields {
+  id: number,
+  college_id: number,
+  album_id: number,
+  title: string;
+  duration: string | number;
+  ad_date: Date;
+  file: any;
+  textBox: string;
+  detail_portion: string;
+  detail: string;
+  active: boolean;
+}
+
+const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const MAX_FILE_SIZE = 5000000;
+const ACCEPTED_FILE_TYPES = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf"];
+
+const validationSchema = toTypedSchema(
+  zod.object({
+    college_id: zod.number({ required_error: "اختر اسم الكلية" }),
+    title: zod.string({ required_error: "ادخل عنوان الاعلان" }).min(1, { message: "ادخل عنوان الاعلان" }),
+    ad_date: zod.date({ required_error: "اختر تاريخ الاعلان" }),
+    duration: zod.preprocess((val) => String(val), zod.string().min(1, { message: "ادخل عدد أيام عرض الاعلان" })),
+    file: zod.any().optional().refine((files) => files?.length == 1, "اختر الملف المرفق")
+      .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `الحد الأقصى لحجم الملف هو 5 ميجابايت`)
+      .refine((files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .doc, .docx, .pdf").nullish(),
+    detail_portion: zod.string({ required_error: "ادخل جزء من المحتوى" }).trim().min(1, { message: 'ادخل جزء من المحتوى' }),
+    detail: zod.string({ required_error: "ادخل المحتوى" }).trim().min(1, { message: 'ادخل المحتوى' }),
+  })
+);
+
+const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<FormFields>({
+  validationSchema,
+});
+
+const id = ref(-1);
+let colleges = ref<Array<any>>([]);
+let albums = ref<Array<any>>([]);
+let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+
+
+const disabled = ref(true);
+const fullscreen = ref(true);
+const showAlbum = ref(false);
+const showImage = ref(false);
+const photo = ref();
+const photoDesc = ref();
+let photos = ref<Array<any>>([]);
+let thumb_photos = ref<Array<any>>([]);
+let album_photos = ref<Array<any>>([]);
+const album_title = ref();
+const dialog = ref(false);
+const item = ref();
+const itemType = ref();
+const fileInput = ref();
+const filePath = ref();
+
+const { value: title } = useField('title');
+const { value: duration } = useField('duration');
+const { value: college_id } = useField('college_id');
+const { value: album_id } = useField('album_id');
+const { value: ad_date } = useField('ad_date');
+const { value: file } = useField('file');
+const { value: detail_portion } = useField('detail_portion');
+const { value: detail } = useField<string>('detail');
+const { value: active } = useField('active');
+
+const { value: textBox } = useField<string>('textBox');
+
+ad_date.value = new Date();
+
+let ErorrMsg = 'اسم الاعلان موجود مسبقا'
+
+const save = handleSubmit((values) => {
+
+  let dateVal = new Date(values.ad_date).toLocaleDateString('en-US')
+
+  let photo_ids = photos.value.map((a: any) => a.id);
+
+  const formData = new FormData();
+  formData.append("college_id", values.college_id.toString())
+  formData.append("title", values.title)
+  formData.append("lang", '2')
+  formData.append("photos", photo_ids.sort().toString())
+  formData.append("keywords", chipData.value.toString())
+  formData.append("ad_date", new Date(values.ad_date.toString()).toLocaleDateString('sv-SE'))
+  formData.append("duration", values.duration)
+  formData.append("detail_portion", values.detail_portion)
+  formData.append("detail", values.detail)
+  formData.append("active", Number(active.value).toString())
+  if (fileInput.value.files[0] != undefined) {
+    formData.append("file", fileInput.value.files[0])
+  }
+  if (id.value > -1) {
+    formData.append('_method', 'put');
+    axios.post(url + "/" + id.value, formData, { headers: { 'content-type': 'multipart/form-data' } }).then(result => {
+      table.value.PopulateTable(result.data.status, 'title', ErorrMsg);
+    })
+  } else {
+    axios.post(url, formData, { headers: { 'content-type': 'multipart/form-data' } }).then(result => {
+      table.value.PopulateTable(result.data.status, 'title', ErorrMsg);
+    });
+  }
+  // close();
+});
+
+function editItem(item: any) {
+  item = toRaw(item);
+  table.value.disableEditButton = !table.value.disableEditButton;
+  if (table.value.disableEditButton == true) {
+    id.value = item.id;
+    axios.get(url + '/' + item.id).then(response => {
+      item = response.data.result;
+      filePath.value = item.file;
+      photos.value = toRaw(item.photos);
+      album_photos.value = thumb_photos.value = []
+      setValues({
+        college_id: item.college_id,
+        title: item.title,
+        duration: String(item.duration),
+        ad_date: new Date(item.ad_date),
+        active: item.active,
+        detail_portion: item.detail_portion,
+        detail: item.detail,
+      })
+      getAlbums(item.college_id)
+      table.value.disableEditButton = false
+      table.value.dialog = true
+    });
+  }
+}
+
+function close() {
+  nextTick(() => {
+    id.value = -1
+    resetForm();
+  });
+  table.value.disableEditButton = false;
+  table.value.dialog = false;
+}
+
+function changePriority(item: any) {
+  table.value.tableloading = true
+  axios.put(url + "/priority/" + item);
+  table.value.PopulateTable()
+  table.value.tableloading = false
+}
+
+function onSelectFile() {
+  file.value = fileInput.value.files
+}
+
+function addKeyWords() {
+  if (textBox.value != undefined && textBox.value.trim() != '') {
+    chipData.value.push(textBox.value)
+    textBox.value = ""
+  }
+}
+
+function removeItem() {
+  if (itemType.value == 'KeyWord') {
+    chipData.value.splice(chipData.value.indexOf(item.value), 1)
+    if (chipData.value.length == 0)
+      setFieldError('textBox', 'ادخل الكلمة / الكلمات المفتاحية')
+  }
+  else if (itemType.value == 'photo') {
+    photos.value = photos.value.filter(function (key: any) { return key.thumb_photo != item.value; });
+    thumb_photos.value = photos.value.map((a: any) => a.thumb_photo)
+    if (thumb_photos.value.length == 0)
+      setFieldError('album_id', 'اختر صورة / صور محتوى الاعلان')
+  }
+  dialog.value = false
+}
+
+async function getColleges() {
+  await axios.get(route("colleges.list")).then(response => {
+    colleges.value = response.data.colleges;
+  });
+}
+
+async function getAlbums(college_id: any) {
+  await axios.post(route("albums.list"), { 'college_id': college_id }).then(response => {
+    if (disabled.value == true) {
+      disabled.value = !disabled.value
+    }
+    if (response.data.albums.length < 1) {
+      albums.value = []
+      album_id.value = undefined
+    }
+    else {
+      albums.value = response.data.albums;
+      albums.value.unshift({ 'id': 0, 'title': 'اختر الالبوم' });
+      album_id.value = response.data.albums[0].id
+    }
+  });
+}
+
+async function getAlbumPhotos(album_id: any) {
+  if (album_id != 0) {
+    album_title.value = albums.value[1].title;
+    await axios.post(route("album_photos.list"), { 'album_id': album_id }).then(response => {
+      album_photos.value = response.data.album_photos;
+      showAlbum.value = true
+    });
+    thumb_photos.value = photos.value.map((a: any) => a.thumb_photo)
+  }
+}
+
+function showModal(photoPath: any, desc: any) {
+  photoDesc.value = desc
+  photo.value = BASE_URL + photoPath
+  showImage.value = true
+}
+
+watch(() => thumb_photos.value, (newVal) => {
+  if (album_photos.value.length != 0) {
+    let result = '';
+    let temp: Array<any> = [];
+    newVal.map(item => {
+      result = toRaw(album_photos.value.find((a: any) => a.thumb_photo == item));
+      if (result != undefined)
+        temp.push(result);
+      else
+        temp.push(toRaw(photos.value.find((a: any) => a.thumb_photo == item)))
+    });
+    if (temp[0] != undefined && temp.length > 0) {
+      photos.value = temp;
+    }
+  }
+}, {
+  deep: true,
+});
+
+onBeforeMount(() => {
+  getColleges();
+});
+</script>
