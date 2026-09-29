@@ -13,10 +13,10 @@ class StaffAcademic extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable,HasFactory, SoftDeletes;
 
-    protected $fillable = ['lang', 'user_id', 'item', 'item_val','url','img','thumb_img','file','detail','auth_id'];
+    protected $fillable = ['lang', 'user_id', 'item', 'item_val', 'type', 'url', 'img', 'thumb_img', 'file', 'detail', 'auth_id'];
 
     protected $auditInclude = [
-        'lang', 'user_id', 'item', 'item_val','url','img','thumb_img','file','detail','auth_id',
+        'lang', 'user_id', 'item', 'item_val', 'type', 'url', 'img', 'thumb_img', 'file', 'detail', 'auth_id',
     ];
 
     protected $hidden = [

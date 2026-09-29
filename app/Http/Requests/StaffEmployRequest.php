@@ -29,15 +29,13 @@ class StaffEmployRequest extends FormRequest
     {
         return [
             'department_id' => 'bail|required',
-            'job_title' => 'required|string',
-            'job_title_en' => 'required|string',
-            'rank' => 'required|string',
-            'rank_en' => 'required|string',
+            'grade' => 'required|string',
+            'grade_en' => 'required|string',
             'hire_date' => 'required|date',
-            'specialty' => 'required|string',
-            'subspecialty' => 'required|string',
-            'specialty_en' => 'required|string',
-            'subspecialty_en' => 'required|string',
+            'specialty' => 'nullable|string',
+            'subspecialty' => 'nullable|string',
+            'specialty_en' => 'nullable|string',
+            'subspecialty_en' => 'nullable|string',
             'user_id' => 'required|string'
         ];
     }

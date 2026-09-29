@@ -1,5 +1,6 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="الاخبار باللغة العربية"
         @setFieldError="setFieldError" @save="save" @edit-item="editItem" @change-priority="changePriority"
@@ -7,24 +8,21 @@
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
             <v-col cols="12" class="pt-0">
-              <v-text-field id="title" name="title" label="عنوان الخبر" v-model="title" variant="underlined"
-                class="text-caption" prepend-icon="mdi-bank" :error-messages="errors.title"></v-text-field>
+              <v-text-field autofocus id="title" name="title" label="عنوان الخبر" v-model="title" variant="outlined"
+                class="text-caption" prepend-icon="mdi-bank" :error-messages="errors.title" density="comfortable" maxlength="255" counter="255"></v-text-field>
             </v-col>
-            <v-col cols="12" md="4" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-show="colleges && colleges.length > 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getAlbums($event)"
-                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getAlbums($event)" label="اسماء الكليات" :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="4" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0">
               <date-picker label="تاريخ الخبر" id="news_date" name="news_date" v-model="news_date"
                 :error-messages="errors.news_date"></date-picker>
             </v-col>
-            <v-col cols="12" :md="filePath != undefined ? 3 : 4" class="pt-0">
-              <v-file-input type="file" id="file" name="file" ref="fileInput" show-size @change="onSelectFile" chips
-                label="اختر الملف  المرفق" accept='.dox,.docx,.pdf' variant="underlined"
-                :error-messages="errors.file"></v-file-input>
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0">
+              <v-file-input type="file" id="file" name="file" v-model="file" show-size chips label="اختر الملف المرفق" accept='.dox,.docx,.pdf' variant="outlined" :error-messages="errors.file" density="comfortable"></v-file-input>
             </v-col>
-            <v-col v-if="filePath != undefined" cols="12" md="1" class="pt-7">
+            <v-col v-if="filePath != ''" cols="12" md="1" class="pt-7">
               <a :href="BASE_URL + filePath" class="text-subtitle-2">الملف الحالي<v-icon
                   icon="mdi-file-document"></v-icon></a>
             </v-col>
@@ -32,7 +30,7 @@
               <v-select id="album_id" name="album_id" :disabled="disabled" class="mb-5" :items="albums"
                 density="comfortable" item-title="title" item-value="id" prepend-icon="mdi-bank" v-model="album_id"
                 @update:modelValue="getAlbumPhotos($event)" label="البومات الصور" :error-messages="errors.album_id"
-                variant="underlined"></v-select>
+                variant="outlined"></v-select>
               <v-dialog v-model="showImage" width="800">
                 <v-card>
                   <v-card-text class="pa-3">
@@ -43,7 +41,7 @@
               </v-dialog>
               <v-card class="mx-auto mt-4 bg-grey-lighten-4" v-if="photos.length > 0">
                 <v-container fluid>
-                  <v-row dense>
+                  <v-row density="comfortable">
                     <v-col cols="12" class="mb-4">
                       <div class="text-red-darken-3">الصور المضافة لمحتوى الخبر</div>
                     </v-col>
@@ -68,9 +66,9 @@
               </v-card>
             </v-col>
             <v-col cols="12">
-              <v-text-field type="text" label="الكلمات المفتاحية" v-model="keyWord" variant="underlined"
+              <v-text-field type="text" label="الكلمات المفتاحية" v-model="keyWord" variant="outlined"
                 @keyup.enter="addKeyWords" prepend-icon="mdi-bank" v-click-outside="addKeyWords"
-                :error-messages="errors.keyWord">
+                :error-messages="errors.keyWord" density="comfortable">
                 <template v-slot:append>
                   <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
                 </template>
@@ -82,8 +80,8 @@
             </v-col>
             <v-divider></v-divider>
             <v-col cols="12" class="mt-1">
-              <v-text-field name="detail_portion" variant="underlined" label="جزء من المحتوى" v-model="detail_portion"
-                :error-messages="errors.detail_portion" prepend-icon="mdi-bank"></v-text-field>
+              <v-text-field name="detail_portion" variant="outlined" label="جزء من المحتوى" v-model="detail_portion"
+                :error-messages="errors.detail_portion" prepend-icon="mdi-bank" density="comfortable"></v-text-field>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-plus</v-icon> تفاصيل الخبر</p>
@@ -107,23 +105,17 @@
             تأكيد عملية الحذف ؟
           </v-col>
         </v-row>
-        <v-row>
-          <v-col cols="12" class="mx-1">
-            <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12" class="pt-0">
-            <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
-          </v-col>
-        </v-row>
+        <div class="d-flex justify-center mt-4">
+                  <v-btn color="green-darken-1" variant="elevated" @click="removeItem()" rounded="pill" class=" px-8">موافق</v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill" class="ms-4 px-8">الغاء</v-btn>
+                </div>
       </v-card-text>
     </v-card>
   </v-dialog>
   <v-dialog v-model="showAlbum" persistent>
     <v-card class="mx-auto bg-grey-lighten-4" v-if="album_photos.length > 0">
       <v-container fluid>
-        <v-row dense>
+        <v-row density="comfortable">
           <v-col cols="12" class="mb-4">
             <div class="text-red-darken-3">صور البوم - {{ album_title }}</div>
           </v-col>
@@ -151,27 +143,23 @@
       </v-container>
     </v-card>
   </v-dialog>
+  </div>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw, watch } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
-const Editor = defineAsyncComponent(() => import('../components/Editor.vue'))
-const datePicker = defineAsyncComponent(() => import('../components/DatePicker.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import { z as zod } from 'zod';
-import { nextTick, onBeforeMount, ref } from 'vue';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
 const url = route('news.index')
 const headers = [
-  { title: 'عنوان الخبر', key: 'title', width: 200 },
+  { title: 'عنوان الخبر', key: 'title', width: 320 },
   { title: 'اسم الكلية', key: 'college.name', align: 'center' },
-  { title: 'تاريخ الخبر', key: 'news_date' },
-  { title: 'نشر الخبر', key: 'active', sortable: false },
-  { title: 'أولوية نشر الخبر', key: 'priority', sortable: false },
-  { title: '', key: 'actions', value: 'id',sortable: false },
+  { title: 'تاريخ الخبر', key: 'news_date', align: 'center' },
+  { title: 'نشر الخبر', key: 'active', sortable: false, align: 'center' },
+  { title: 'أولوية نشر الخبر', key: 'priority', sortable: false, align: 'center' },
+  { title: 'الإجراءات', key: 'actions', value: 'id', sortable: false, align: 'center' },
 ];
 
 const table = ref();
@@ -188,17 +176,18 @@ interface FormFields {
   active: boolean;
 }
 
-const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const BASE_URL = window.location.origin + '/';
 const ACCEPTED_FILE_TYPES = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf"];
 
 const validationSchema = toTypedSchema(
   zod.object({
     college_id: zod.number({ required_error: "اختر اسم الكلية" }),
-    title: zod.string({ required_error: "ادخل عنوان الخبر" }).min(1, { message: "ادخل عنوان الخبر" }),
-    news_date: zod.date({ required_error: "اختر تاريخ الخبر" }),
-    file: zod.any().optional().refine((files) => files?.length == 1, "اختر الملف المرفق")
-      .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`)
-      .refine((files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .doc, .docx, .pdf").nullish(),
+    title: zod.string({ required_error: "ادخل عنوان الخبر" }).min(1, { message: "ادخل عنوان الخبر" }).max(255, { message: "يجب أن لا يتجاوز العنوان 255 حرفاً" }),
+    news_date: zod.any({ required_error: "اختر تاريخ الخبر", invalid_type_error: "تأكد من تاريخ الخبر" }),
+    file: zod.any().optional()
+      .refine((files) => !files || files.length === 0 || files.length === 1, "اختر الملف المرفق")
+      .refine((files) => !files || files.length === 0 || ((Array.isArray(files) ? files[0] : files)?.size || 0) <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`)
+      .refine((files) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes((Array.isArray(files) ? files[0] : files)?.type), "يتم دعم  فقط .doc, .docx, .pdf").nullish(),
     detail_portion: zod.string({ required_error: "ادخل جزء من المحتوى" }).trim().min(1, { message: 'ادخل جزء من المحتوى' }),
     detail: zod.string({ required_error: "ادخل المحتوى" }).trim().min(1, { message: 'ادخل المحتوى' }),
   })
@@ -211,7 +200,7 @@ const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<Fo
 const id = ref(-1);
 let colleges = ref<Array<any>>([]);
 let albums = ref<Array<any>>([]);
-let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+let chipData = ref(['جامعة السودان للعلوم والتكنولوجيا']);
 
 
 const disabled = ref(true);
@@ -262,13 +251,21 @@ const save = handleSubmit((values) => {
   formData.append("lang", '1')
   formData.append("photos", photo_ids.sort().toString())
   formData.append("keywords", chipData.value.toString())
-  formData.append("news_date", new Date(values.news_date.toString()).toLocaleDateString('sv-SE'))
+  let formattedDate = '';
+  if (typeof values.news_date === 'string' && values.news_date.includes('-')) {
+    formattedDate = values.news_date;
+  } else {
+    const d = new Date(values.news_date);
+    formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  formData.append("news_date", formattedDate)
   formData.append("detail_portion", values.detail_portion)
   formData.append("detail", values.detail)
   formData.append("active", Number(active.value).toString())
 
-  if (fileInput.value.files[0] != undefined) {
-    formData.append("file", fileInput.value.files[0])
+  if (file.value) {
+    const f = Array.isArray(file.value) ? file.value[0] : file.value;
+    if (f) formData.append("file", f);
   }
 
   let temp: Array<any> = [];
@@ -279,7 +276,7 @@ const save = handleSubmit((values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status, temp);
-    });
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); });
   } else {
     formData.append('_method', 'put');
     axios.post(url + "/" + id.value, formData, { headers: { 'content-type': 'multipart/form-data' } }).then(result => {
@@ -287,9 +284,9 @@ const save = handleSubmit((values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status, temp);
-    })
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); })
   }
-  table.value.SubmitLoading = false;
+  
 });
 
 function editItem(item: any) {
@@ -302,7 +299,7 @@ function editItem(item: any) {
       if(item.keywords != null && item.keywords.length > 0){
         chipData.value = item.keywords.split(',');
       } else {
-        chipData.value = ['جامعة السودان للعلوم و التكنولوجيا'];
+        chipData.value = ['جامعة السودان للعلوم والتكنولوجيا'];
       }
       filePath.value = item.file;
       photos.value = toRaw(item.photos);
@@ -310,7 +307,7 @@ function editItem(item: any) {
       setValues({
         college_id: item.college_id,
         title: item.title,
-        news_date: new Date(item.news_date),
+        news_date: item.news_date,
         active: item.active,
         detail_portion: item.detail_portion,
         detail: item.detail,
@@ -326,9 +323,12 @@ function close() {
   nextTick(() => {
     id.value = -1
     if (chipData.value.length < 1) {
-      chipData.value.push('جامعة السودان للعلوم و التكنولوجيا')
+      chipData.value.push('جامعة السودان للعلوم والتكنولوجيا')
     }
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    filePath.value = '';
+    photo.value = '';
   });
   photos.value = [];
   albums.value = [];
@@ -338,21 +338,31 @@ function close() {
 }
 
 function changePriority(item: any) {
-  table.value.tableloading = true
-  axios.put(url + "/priority/" + item);
-  table.value.PopulateTable()
-  table.value.tableloading = false
+  table.value.tableloading = true;
+  axios.put(url + "/priority/" + item).then(res => {
+    if (res.data.status === 400) {
+      Swal.fire({ title: res.data.message, icon: 'warning', confirmButtonColor: '#198754', confirmButtonText: 'موافق' });
+    }
+    table.value.PopulateTable();
+    table.value.tableloading = false;
+  }).catch(() => {
+    table.value.PopulateTable();
+    table.value.tableloading = false;
+  });
 }
 
-function onSelectFile() {
-  file.value = fileInput.value.files
-}
+
 
 function addKeyWords() {
-  if (keyWord.value != undefined && keyWord.value.trim() != '' && chipData.value.includes(keyWord.value) == false) {
-    chipData.value.push(keyWord.value)
+  if (keyWord.value != undefined && keyWord.value.trim() != '') {
+    const parts = keyWord.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    parts.forEach(part => {
+      if (!chipData.value.includes(part)) {
+        chipData.value.push(part);
+      }
+    });
   }
-  keyWord.value = ""
+  keyWord.value = "";
 }
 
 function removeItem() {
@@ -373,7 +383,8 @@ function removeItem() {
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 async function getAlbums(college_id: any) {
@@ -411,7 +422,7 @@ async function getAlbumPhotos(album_id: any) {
 
 function showModal(photoPath: any, desc: any) {
   photoDesc.value = desc
-  photo.value = BASE_URL + photoPath
+  photo.value = BASE_URL + '/' + photoPath
   showImage.value = true
 }
 

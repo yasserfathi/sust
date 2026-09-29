@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table :id="id" ref="table" :url="url" :headers="headers" toolbar_title="مستخدمو النظام و أعضاء هيئة التدريس"
         @setFieldError="setFieldError" @edit-item="editItem" @close="close" :fullscreen="fullscreen"
@@ -13,40 +13,38 @@
           </v-stepper-header>
           <v-stepper-window>
             <v-stepper-window-item :value="1">
-              <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
-                <v-row>
-                  <v-col cols="12" md="3">
-                    <v-text-field id="name" name="name" label="اسم المستخدم باللغة العربية" v-model="name"
-                      variant="underlined" :error-messages="errors.name"></v-text-field>
+              <form @submit.prevent="save">
+                <v-row style="margin-top: 5px;">
+                  <v-col cols="12" md="6">
+                    <v-text-field autofocus id="name" name="name" label="اسم المستخدم باللغة العربية" v-model="name"
+                      variant="outlined" :error-messages="errors.name" density="comfortable"></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="3">
+                  <v-col cols="12" md="6">
                     <v-text-field id="name_en" name="name_en" label="اسم المستخدم باللغة الانجليزية" v-model="name_en"
-                      variant="underlined" :error-messages="errors.name_en"></v-text-field>
+                      variant="outlined" :error-messages="errors.name_en" density="comfortable"></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field id="phone" name="phone" label="رقم الهاتف" v-model="phone" variant="underlined"
-                      :error-messages="errors.phone"></v-text-field>
+                  <v-col cols="12" md="6">
+                    <v-text-field id="phone" name="phone" label="رقم الهاتف" v-model="phone" variant="outlined"
+                      :error-messages="errors.phone" density="comfortable"></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="3">
-                    <v-text-field id="email" name="email" label="البريد الالكتروني" v-model="email" variant="underlined"
-                      :error-messages="errors.email"></v-text-field>
+                  <v-col cols="12" md="6">
+                    <v-text-field id="email" name="email" label="البريد الالكتروني" v-model="email" variant="outlined"
+                      :error-messages="errors.email" density="comfortable"></v-text-field>
                   </v-col>
                   <v-col cols="12" md="4">
                     <v-text-field id="university_no" name="university_no" label="الرقم الجامعي" v-model="university_no"
-                      variant="underlined" :error-messages="errors.university_no"></v-text-field>
+                      variant="outlined" :error-messages="errors.university_no" density="comfortable"></v-text-field>
                   </v-col>
                   <v-col cols="12" md="4">
                     <v-select id="role" name="role" :items="user_roles" item-title="name" item-value="id"
                       prepend-icon="mdi-account-box-outline" v-model="role" label="دور المستخدم"
-                      :error-messages="errors.role" variant="underlined"></v-select>
+                      :error-messages="errors.role" variant="outlined" density="comfortable"></v-select>
                   </v-col>
-                  <v-col cols="12" :md="imagePath != undefined ? 3 : 4">
-                    <v-file-input type="file" id="img" name="img" ref="imgInput" show-size chips
-                      accept='.jpg,.jpeg,.png' @change="onSelectImage" label="اختر ملف الصورة" variant="underlined"
-                      :error-messages="errors.img"></v-file-input>
+                  <v-col cols="12" :md="imagePath != '' ? 3 : 4">
+                    <v-file-input type="file" id="img" name="img" v-model="img" show-size chips accept='.jpg,.jpeg,.png' label="اختر ملف الصورة" variant="outlined" :error-messages="errors.img" density="comfortable"></v-file-input>
                   </v-col>
-                  <v-col v-if="imagePath && imagePath !== 'null' && imagePath !== 'undefined'" cols="12" md="1">
-                    <v-img :src="BASE_URL + '/' + imagePath" :lazy-src="BASE_URL + '/' + imagePath" :height="48"
+                  <v-col v-if="(imagePath && imagePath !== 'null' && imagePath !== 'undefined') || photo" cols="12" md="1">
+                    <v-img :src="photo ? photo : BASE_URL + '/' + imagePath" :lazy-src="photo ? photo : BASE_URL + '/' + imagePath" :height="48"
                       style="cursor: pointer" @click="showModal()">
                       <template v-slot:placeholder>
                         <v-row class="fill-height ma-0" align="center" justify="center">
@@ -57,23 +55,26 @@
                     <v-dialog v-model="showImage" width="800">
                       <v-card>
                         <v-card-text class="pa-3">
-                          <v-img v-if="photo" :src="photo" :lazy-src="photo"></v-img>
+                          <v-img :src="photo ? photo : BASE_URL + '/' + (fullImagePath || imagePath)" :lazy-src="photo ? photo : BASE_URL + '/' + (fullImagePath || imagePath)"></v-img>
                         </v-card-text>
                       </v-card>
                     </v-dialog>
                   </v-col>
-                  <v-col cols="12">
+                  <v-col cols="12" md="6">
                     <v-switch :label="`تنشيط المستخدم`" id="active" name="active" v-model="active" color="#198754"
                       density="compact" hide-details class="pr-3"></v-switch>
                   </v-col>
+                  <v-col cols="12" md="6">
+                    <v-switch :label="`مندوب الكلية`" id="is_college_rep" name="is_college_rep" v-model="is_college_rep" color="#198754"
+                      density="compact" hide-details class="pr-3"></v-switch>
+                  </v-col>
                 </v-row>
-              </Form>
-              <div class="d-flex justify-end mt-6">
-                <v-btn color="primary" @click="save" :loading="step1Loading" append-icon="mdi-arrow-left"
-                  :disabled="!isStep1Valid">
-                  التالي
-                </v-btn>
-              </div>
+                <div class="d-flex justify-end mt-6">
+                  <v-btn color="primary" type="submit" :loading="step1Loading" append-icon="mdi-arrow-left">
+                    التالي
+                  </v-btn>
+                </div>
+              </form>
             </v-stepper-window-item>
             <v-stepper-window-item :value="2">
               <user-personnel-form :user_id="id"></user-personnel-form>
@@ -85,39 +86,49 @@
             </v-stepper-window-item>
           </v-stepper-window>
         </v-stepper>
+        <template v-slot:[`item.reset_password`]="{ item }">
+          <v-btn icon variant="text" size="small" :color="item.is_default_password ? 'warning' : 'grey'" @click="resetPassword(item)" title="اعادة تعيين كلمة المرور">
+            <v-icon>mdi-lock-reset</v-icon>
+          </v-btn>
+        </template>
       </Table>
     </v-card>
   </v-container>
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, nextTick, onBeforeMount, computed, ref, toRaw, watch, onMounted } from 'vue';
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
 import userPersonnelForm from '../pages/userPersonnelForm.vue'
-const Dialog = defineAsyncComponent(() => import('../components/Dialog.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { isMatch } from 'lodash';
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+import { useAuthStore } from '../store/index';
+const authStore = useAuthStore();
+const BASE_URL = window.location.origin;
 
 const url = route('users.index')
-const headers = [
-  { title: 'اسم المستخدم', key: 'name' },
-  { title: 'الكلية', key: 'staff[0].department.college.name' },
-  { title: 'القسم', key: 'staff[0].department.name' },
-  { title: 'الدرجة العلمية', key: 'staff[0].rank' },
-  { title: 'المسمى الوظيفي', key: 'staff[0].job_title' },
-  { title: '', key: 'thumb_img', sortable: false },
-  { title: '', key: 'actions', sortable: false },
-];
+const headers = computed(() => {
+  let cols = [
+    { title: 'اسم المستخدم', key: 'name' },
+    { title: 'الكلية', key: 'staff[0].department.college.name' },
+    { title: 'القسم', key: 'staff[0].department.name' },
+    { title: 'المسمى الوظيفي', key: 'staff[0].grade' },
+    { title: '', key: 'thumb_img', sortable: false },
+    { title: '', key: 'actions', sortable: false },
+  ];
+  if (authStore.user?.role == 1) {
+    cols.splice(cols.length - 1, 0, { title: 'اعادة تعيين كلمة المرور', key: 'reset_password', sortable: false });
+  }
+  return cols;
+});
 
 const table = ref();
 const modal = ref();
 const imgInput = ref();
 const imagePath = ref();
+const fullImagePath = ref();
 const photo = ref();
 const showImage = ref(false);
 const currentStep = ref(1);
@@ -133,6 +144,7 @@ interface FormFields {
   role: number;
   img: any;
   active: boolean;
+  is_college_rep: boolean;
   method: any;
 }
 
@@ -144,12 +156,18 @@ const form_items_types = zod.object({
   phone: zod.string({ required_error: "ادخل رقم الهاتف" }).trim().min(1, { message: 'ادخل رقم الهاتف' }),
   email: zod.string({ required_error: "ادخل البريد الالكتروني" }).trim().min(1, { message: 'ادخل البريد الالكتروني' }),
   role: zod.number({ required_error: "اختر دور المستخدم" }),
-  university_no: zod.string({ required_error: "ادخل الرقم الجامعي" }).trim().min(1, { message: 'ادخل الرقم الجامعي' })
+  university_no: zod.string({ required_error: "ادخل الرقم الجامعي" }).trim().min(1, { message: 'ادخل الرقم الجامعي' }),
+  active: zod.boolean().optional(),
+  is_college_rep: zod.boolean().optional()
 });
 
 const img_obj = zod.any()
-  .refine((files) => !files || files.length === 0 || ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-  .refine((files) => !files || files.length === 0 || files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`);
+  .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+  .refine((files) => !files || files.length === 0 || ((Array.isArray(files) ? files[0] : files)?.size || 0) <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`);
 
 const validationSchema = toTypedSchema(zod.discriminatedUnion('method', [
   form_items_types.merge(zod.object({
@@ -176,6 +194,7 @@ const { value: email } = useField('email');
 const { value: university_no } = useField('university_no');
 const { value: role } = useField('role');
 const { value: active } = useField<Boolean>('active');
+const { value: is_college_rep } = useField<Boolean>('is_college_rep');
 const { value: img } = useField<string>('img');
 const { value: method } = useField('method');
 let ErorrMsg = [
@@ -188,86 +207,93 @@ let ErorrMsg = [
 
 const save = handleSubmit(async (values) => {
   step1Loading.value = true;
-  const formData = new FormData();
-  formData.append("album_id", '1');
-  formData.append("name", values.name.toString());
-  formData.append("name_en", values.name_en.toString());
-  formData.append("email", values.email.toString());
-  formData.append("univ_no", values.university_no.toString());
-  formData.append("phone", values.phone.toString());
-  formData.append("role", values.role.toString());
-  formData.append("active", Number(active.value).toString());
-
-  if (imgInput.value.files[0] != undefined) {
-    formData.append("img", imgInput.value.files[0])
+  try {
+    const formData = new FormData();
+    formData.append("album_id", '1');
+    formData.append("name", values.name.toString());
+    formData.append("name_en", values.name_en.toString());
+    formData.append("email", values.email.toString());
+    formData.append("univ_no", values.university_no.toString());
+    formData.append("phone", values.phone.toString());
+    formData.append("role", values.role.toString());
+    formData.append("active", Number(active.value).toString());
+    formData.append("is_college_rep", Number(is_college_rep.value).toString());
+  if (img.value) {
+    const f_img = Array.isArray(img.value) ? img.value[0] : img.value;
+    if (f_img) formData.append("img", f_img);
   }
 
-  let temp: Array<any> = [];
-  if (id.value > -1 && isMatch(currentItem, values) != true) {
-    formData.append('_method', 'put');
-    await axios.post(url + "/" + id.value, formData, {
-      headers: { 'content-type': 'multipart/form-data' },
-      validateStatus: (status) => status < 500
-    }).then(result => {
-      Object.entries(result.data.message).forEach((item) => {
-        temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
-      });
-      table.value.PopulateTable_album_news(result.data.status, temp);
-      if (result.status === 200 || result.status === 201) {
-        currentStep.value = 2;
-      }
-    });
-  } else if (id.value > -1 && isMatch(currentItem, values) == true) {
-    currentStep.value = 2;
-  }
-  else {
-    await axios.post(url, formData, {
-      headers: { 'content-type': 'multipart/form-data' },
-      validateStatus: (status) => status < 500
-    }).then(result => {
-      id.value = result.data.user_id;
-      Object.entries(result.data.message).forEach((item) => {
-        temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
-      });
-      table.value.PopulateTable_album_news(result.data.status, temp);
-
-      // Navigate based on status
-      if (result.status === 201) {
-        setTimeout(() => {
-          currentStep.value = 2; // Auto-advance to functional data on success
-        }, 1500);
-      } else if (result.status === 409) {
-        currentStep.value = 1; // Stay on personal data on error
-        let errorText = 'حدث خطأ ما';
-        if (result.data.message.email && result.data.message.email[0] === 'duplicate') {
-          errorText = 'البريد الالكتروني مستخدم من قبل';
-        } else if (result.data.message.univ_no && result.data.message.univ_no[0] === 'duplicate') {
-          errorText = 'الرقم الجامعي مستخدم من قبل';
-        } else if (result.data.message.phone && result.data.message.phone[0] === 'duplicate') {
-          errorText = 'رقم الهاتف مستخدم من قبل';
-        }
-
-        Swal.fire({
-          title: 'خطأ!',
-          text: errorText,
-          icon: 'error',
-          confirmButtonColor: '#d33',
-          confirmButtonText: 'موافق'
-        }).then(() => {
-          nextTick(() => {
-            currentStep.value = "1";
-          });
+    let temp: Array<any> = [];
+    if (id.value > -1 && isMatch(currentItem, values) != true) {
+      formData.append('_method', 'put');
+      await axios.post(url + "/" + id.value, formData, {
+        headers: { 'content-type': 'multipart/form-data' },
+        validateStatus: (status) => status < 500
+      }).then(result => {
+        Object.entries(result.data.message).forEach((item) => {
+          temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
         });
-      } else {
-        currentStep.value = 1; // Stay on personal data on error
-      }
+        table.value.PopulateTable_album_news(result.data.status, temp);
+        if (result.status === 200 || result.status === 201) {
+          currentStep.value = 2;
+        }
+      });
+    } else if (id.value > -1 && isMatch(currentItem, values) == true) {
+      currentStep.value = 2;
+    }
+    else {
+      await axios.post(url, formData, {
+        headers: { 'content-type': 'multipart/form-data' },
+        validateStatus: (status) => status < 500
+      }).then(result => {
+        id.value = result.data.user_id;
+        Object.entries(result.data.message).forEach((item) => {
+          temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
+        });
+        table.value.PopulateTable_album_news(result.data.status, temp);
+
+        // Navigate based on status
+        if (result.status === 201) {
+          currentStep.value = 2; // Auto-advance to functional data on success
+        } else if (result.status === 409) {
+          currentStep.value = 1; // Stay on personal data on error
+          let errorText = 'حدث خطأ ما';
+          if (result.data.message.email?.[0] === 'duplicate') {
+            errorText = 'البريد الالكتروني مستخدم من قبل';
+          } else if (result.data.message.univ_no?.[0] === 'duplicate') {
+            errorText = 'الرقم الجامعي مستخدم من قبل';
+          } else if (result.data.message.phone?.[0] === 'duplicate') {
+            errorText = 'رقم الهاتف مستخدم من قبل';
+          }
+
+          Swal.fire({
+            title: 'خطأ!',
+            text: errorText,
+            icon: 'error',
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'موافق'
+          }).then(() => {
+            nextTick(() => {
+              currentStep.value = 1;
+            });
+          });
+        } else {
+          currentStep.value = 1; // Stay on personal data on error
+        }
+      });
+    }
+  } catch (error) {
+    console.error("Save failed", error);
+    Swal.fire({
+      title: 'خطأ!',
+      text: 'حدث خطأ في الاتصال بالخادم',
+      icon: 'error',
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'موافق'
     });
+  } finally {
+    step1Loading.value = false;
   }
-  // if (valid) {
-  //   currentStep.value = 2;
-  // }
-  step1Loading.value = false;
-  // close();
 });
 
 // function editItem(item: any) {
@@ -292,15 +318,21 @@ function editItem(item: any) {
       item = response.data.result;
       if (item != null) {
         imagePath.value = item.thumb_img;
-        setValues({
+        fullImagePath.value = item.img;
+        const mappedValues = {
           name: item.name,
           name_en: item.name_en,
-          active: item.active,
           university_no: item.univ_no,
           role: parseInt(item.role),
           phone: item.phone,
-          email: item.email
-        })
+          email: item.email,
+          active: item.active == 1 ? true : false,
+          is_college_rep: item.is_college_rep == 1 ? true : false,
+          method: 'put',
+          img: undefined
+        };
+        currentItem = mappedValues;
+        setValues(mappedValues);
       }
       table.value.disableEditButton = false
       table.value.dialog = true
@@ -311,19 +343,38 @@ function editItem(item: any) {
 function close() {
   nextTick(() => {
     id.value = -1;
-    imagePath.value = undefined;
+    imagePath.value = '';
+    fullImagePath.value = undefined;
+    photo.value = null;
     resetForm();
+    photo.value = '';
   });
   currentStep.value = 1
   table.value.dialog = false
 }
 
 function showModal() {
-  modal.value.showDialog = true
+  showImage.value = true;
 }
 
-function onSelectImage() {
-  img.value = imgInput.value.files
+function resetPassword(item: any) {
+  Swal.fire({
+    title: 'تأكيد عملية إعادة التعيين؟',
+    text: `سيتم إعادة تعيين كلمة مرور المستخدم (${item.email}) لتصبح نفس البريد الإلكتروني الخاص به.`,
+    icon: 'warning',
+    confirmButtonColor: '#198754',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'موافق',
+    cancelButtonText: 'الغاء',
+    showCancelButton: true,
+    showCloseButton: true
+  }).then((result: any) => {
+    if (result.isConfirmed) {
+      axios.put('/users/' + item.id + '/reset-password').then(() => {
+        Swal.fire({ title: 'تمت العملية بنجاح', icon: 'success', confirmButtonColor: '#198754', confirmButtonText: "Ok", timer: 1500 });
+      });
+    }
+  });
 }
 
 const isStep1Valid = computed(() => {

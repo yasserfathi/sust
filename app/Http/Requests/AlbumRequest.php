@@ -34,6 +34,8 @@ class AlbumRequest extends FormRequest
             'college_id' => 'bail|required',
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('albums')->where(function ($query) {
                     $query->where('title', $this->title)
                         ->where('college_id', $this->college_id)
@@ -42,6 +44,8 @@ class AlbumRequest extends FormRequest
             ],
             'title_en' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('albums')->where(function ($query) {
                     $query->where('title_en', $this->title_en)
                         ->where('college_id', $this->college_id)

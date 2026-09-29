@@ -4,11 +4,14 @@ namespace App\Http\Controllers\ar;
 
 use App\Http\Controllers\Controller;
 use App\Models\Ad;
+use App\Models\Album;
 use App\Models\AlbumPhoto;
 use App\Models\College;
 use App\Models\CollegeStrategic;
 use App\Models\AcademicProgram;
+use App\Models\DeanOfCollege;
 use App\Models\Department;
+use App\Models\HeadOfDepartment;
 use App\Models\News;
 use App\Models\Page;
 use App\Models\StaffEmploy;
@@ -25,23 +28,41 @@ class CollegeArController extends Controller
         $data = $this->getCommonData($college, $college_name);
 
         // Specific to Home
-        $data['name'] = $college_name;
-        $data['banner'] = $college->banner;
-        $data['gallery'] = AlbumPhoto::select('title', 'thumb_img', 'img')
-            ->where('album_id', 1)
-            ->limit(3)
-            ->orderBy('id', 'desc')
+        // Fetch only active gallery photos for this college (up to 5 photos)
+        $collegeAlbumIds = Album::where('college_id', $college->id)->pluck('id');
+        $data['gallery'] = AlbumPhoto::select('title_en', 'title', 'thumb_img', 'img')
+            ->whereIn('album_id', $collegeAlbumIds)
+            ->where('is_active', true)
+            ->limit(5)
+            ->orderByDesc('id')
             ->get();
+
+        if ($data['gallery']->isEmpty()) {
+            $galleryRecord = null;
+            if (\Illuminate\Support\Facades\Schema::hasTable('college_galleries')) {
+                $galleryRecord = \App\Models\CollegeGallery::where('college_id', 1)->first()
+                    ?? \App\Models\CollegeGallery::latest('id')->first();
+            }
+
+            if ($galleryRecord && !empty($galleryRecord->photos)) {
+                $photoIds = explode(',', $galleryRecord->photos);
+                $data['gallery'] = AlbumPhoto::select('title_en', 'title', 'thumb_img', 'img')
+                    ->whereIn('id', $photoIds)
+                    ->limit(5)
+                    ->get();
+            } else {
+                $data['gallery'] = AlbumPhoto::select('title_en', 'title', 'thumb_img', 'img')
+                    ->where('album_id', 1)
+                    ->limit(5)
+                    ->orderByDesc('id')
+                    ->get();
+            }
+        }
 
         $data['news'] = $this->getMainNews($college->id);
 
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
         return view('ar/college/home', compact("data"));
     }
 
@@ -73,7 +94,7 @@ class CollegeArController extends Controller
             ->where('slug', $slug)
             ->where('college_id', $college->id)
             ->where('lang', 1)
-            ->firstOrFail();
+            ->first();
 
         $data['news'] = $this->getMainNews($college->id);
         $data['recent_news'] = $this->getSidebarNews($college->id);
@@ -99,19 +120,16 @@ class CollegeArController extends Controller
                 $q->where('lang', 1);
             }
         ])
-            ->where('college_id', $college->id)
+            ->whereHas('department', function ($q) use ($college) {
+                $q->where('college_id', $college->id);
+            })
             ->where('active', 1)
             ->get();
 
         $data['news'] = $this->getMainNews($college->id);
         $data['recent_news'] = $this->getSidebarNews($college->id);
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
 
         return view('ar/college/academic_programs', compact("data"));
     }
@@ -126,19 +144,27 @@ class CollegeArController extends Controller
         $data['banner'] = $college->banner;
         $dept_name_decoded = str_replace('-', ' ', $dept_name);
 
-        $data['description'] = Department::select('name', 'description_ar')->where('name_en', $dept_name_decoded)
+        $department = Department::select('id', 'name', 'name_en', 'description_ar')
+            ->where('name_en', $dept_name_decoded)
             ->where('college_id', $college->id)
-            ->firstOrFail();
+            ->first();
+
+        $data['description'] = $department;
+
+        // Fetch current Head of Department
+        $data['head_of_department'] = null;
+        if ($department) {
+            $data['head_of_department'] = HeadOfDepartment::with(['user.staff_latest'])
+                ->where('department_id', $department->id)
+                ->whereNull('end_date')
+                ->latest('start_date')
+                ->first();
+        }
 
         $data['news'] = $this->getMainNews($college->id);
         $data['recent_news'] = $this->getSidebarNews($college->id);
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
 
         return view('ar/college/about_department', compact("data"));
     }
@@ -173,18 +199,13 @@ class CollegeArController extends Controller
         $data['vision_mission_objectives'] = CollegeStrategic::select('vision', 'mission', 'goals')
             ->where('college_id', $college->id)
             ->where('lang', 1)
-            ->firstOrFail();
+            ->first();
 
         $data['news'] = $this->getMainNews($college->id);
         $data['recent_news'] = $this->getSidebarNews($college->id);
 
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
         return view('ar/college/vision_mission_objectives', compact("data"));
     }
 
@@ -198,23 +219,27 @@ class CollegeArController extends Controller
         $data['banner'] = $college->banner;
         $dept_name_decoded = str_replace('-', ' ', $dept_name);
 
-        $department = Department::where('name_en', $dept_name_decoded)
+        $department = Department::with(['academicPrograms' => fn($q) => $q->where('active', 1)])
             ->where('college_id', $college->id)
-            ->firstOrFail();
+            ->where(function($q) use ($dept_name_decoded) {
+                $q->where('name_en', $dept_name_decoded)
+                  ->orWhere('name', $dept_name_decoded);
+            })
+            ->first();
 
-        $data['programs'] = AcademicProgram::where('department_id', $department->id)
-            ->where('active', 1)
-            ->get();
+        if (!$department) {
+            $department = Department::with(['academicPrograms' => fn($q) => $q->where('active', 1)])
+                ->where('college_id', $college->id)
+                ->first();
+        }
+
+        $data['department'] = $department;
+        $data['programs'] = $department ? $department->academicPrograms : collect();
 
         $data['news'] = $this->getMainNews($college->id);
-        $data['recent_news'] = $this->getSidebarNews($college->id);
+        $data['recent_news'] = $data['news'];
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
 
         return view('ar/college/academic_programs', compact("data"));
     }
@@ -228,26 +253,52 @@ class CollegeArController extends Controller
 
         $data['name'] = $college_name;
         $data['banner'] = $college->banner;
-        $data['staff'] = StaffEmploy::with(['department:id,name,college_id', 'department.college:id,name', 'user'])
+
+        $deanRecord = DeanOfCollege::with(['user.staff_latest.department.college'])
+            ->where('college_id', $college->id)
+            ->whereNull('end_date')
+            ->first();
+
+        $staffList = StaffEmploy::with(['department:id,name,college_id', 'department.college:id,name', 'user:id,name,name_en,slug,img,thumb_img'])
             ->whereHas('user', function ($q) {
                 $q->where('id', '!=', 1);
             })
             ->whereHas('department', function ($q) use ($college) {
                 $q->where('college_id', $college->id);
             })
+            ->orderByRaw("FIELD(grade, 'مساعد تدريس', 'مساعد تدريس ج', 'محاضر', 'استاذ مساعد', 'استاذ مشارك', 'استاذ', 'الاستاذ') DESC")
             ->orderBy('hire_date', 'desc')
             ->get();
+
+        if ($deanRecord && $deanRecord->user) {
+            $deanUserId = $deanRecord->user_id;
+
+            $deanStaffKey = $staffList->search(function ($item) use ($deanUserId) {
+                return $item->user_id == $deanUserId;
+            });
+
+            if ($deanStaffKey !== false) {
+                $deanStaff = $staffList->pull($deanStaffKey);
+            } else {
+                $deanStaff = $deanRecord->user->staff_latest_by_id ?? $deanRecord->user->staff_latest;
+                if ($deanStaff) {
+                    $deanStaff->load(['department:id,name,college_id', 'department.college:id,name', 'user']);
+                }
+            }
+
+            if ($deanStaff) {
+                $deanStaff->is_dean = true;
+                $staffList->prepend($deanStaff);
+            }
+        }
+
+        $data['staff'] = $staffList;
 
         $data['news'] = $this->getMainNews($college->id);
         $data['recent_news'] = $this->getSidebarNews($college->id);
 
 
-        $data['recent_ads'] = Ad::select('title')
-            ->where('lang', 1)
-            ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
-            ->limit(3)
-            ->get();
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
         return view('ar/college/staff', compact("data"));
     }
 
@@ -269,11 +320,22 @@ class CollegeArController extends Controller
             $page->img = 'images/gallery/vision.jpg';
         }
 
+        if ($pageTitle === 'dean_word') {
+            $dean = DeanOfCollege::with('user:id,img')
+                ->where('college_id', $college->id)
+                ->whereNull('end_date')
+                ->first();
+            if ($dean && $dean->user && $dean->user->img) {
+                $page->img = $dean->user->img;
+            }
+        }
+
         $data[$pageTitle] = $page;
 
         $data['news'] = $this->getMainNews($college->id);
-        $data['recent_news'] = $this->getSidebarNews($college->id);
+        $data['recent_news'] = $data['news'];
 
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
         return view($viewName, compact("data"));
     }
 
@@ -282,14 +344,29 @@ class CollegeArController extends Controller
      */
     private function getCollege($college_name)
     {
-        $college = College::select('id', 'logo', 'banner', 'college_type')
+        $college = College::select('id', 'name', 'name_en', 'logo', 'banner', 'college_type', 'slug')
             ->where('slug', $college_name)
             ->orWhere('slug', 'college-of-' . $college_name)
             ->orWhere('slug', $college_name . '-college')
-            ->orWhere('slug', 'like', '%' . $college_name . '%')
-            ->firstOrFail();
+            ->first();
 
-        if (strtolower($college->getRawOriginal('college_type')) !== strtolower(request()->segment(2))) {
+        if (!$college) {
+            $college = College::select('id', 'name', 'name_en', 'logo', 'banner', 'college_type', 'slug')
+                ->where('slug', 'like', '%' . $college_name . '%')
+                ->first();
+        }
+
+        if (!$college) {
+            abort(404);
+        }
+
+        $rawType = $college->getRawOriginal('college_type');
+        $collegeTypeEn = array_search($rawType, $college->getCollegeTypeOptions());
+        if (!$collegeTypeEn) {
+            $collegeTypeEn = $rawType;
+        }
+
+        if (request()->segment(2) && strtolower($collegeTypeEn) !== strtolower(request()->segment(2))) {
             abort(404);
         }
 
@@ -303,6 +380,8 @@ class CollegeArController extends Controller
     {
         return [
             'name' => $college_name,
+            'college' => $college,
+            'college_title' => $college->name,
             'college_type' => $college->getRawOriginal('college_type'),
             'logo' => $college->logo,
             'banner' => $college->banner,
@@ -336,7 +415,19 @@ class CollegeArController extends Controller
             ->where('college_id', $college_id)
             ->where('lang', 1)
             ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
+            ->orderByDesc('id')
+            ->limit(3)
+            ->get();
+    }
+
+    private function getSidebarAds(int $college_id)
+    {
+        return Ad::select('id', 'title', 'slug')
+            ->where('college_id', $college_id)
+            ->where('lang', 1)
+            ->where('active', 1)
+            ->orderByRaw('priority desc')
+            ->orderByDesc('id')
             ->limit(3)
             ->get();
     }
@@ -358,7 +449,7 @@ class CollegeArController extends Controller
             ->where('active', 1)
             ->where('college_id', $college->id)
             ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
+            ->orderByDesc('id')
             ->paginate(8);
 
         if ($data['news']->isEmpty()) {
@@ -377,7 +468,7 @@ class CollegeArController extends Controller
         $data['news'] = News::select('id', 'title', 'news_date', 'detail', 'file')
             ->with('photos')
             ->where('slug', $slug)
-            ->firstOrFail();
+            ->first();
 
         return view('ar/college/news_details', ['data' => $data]);
     }
@@ -399,7 +490,7 @@ class CollegeArController extends Controller
             ->where('active', 1)
             ->where('college_id', $college->id)
             ->orderByRaw('priority desc')
-            ->orderBy('id', 'desc')
+            ->orderByDesc('id')
             ->paginate(8);
 
         return view('ar/college/ads_archive', ['data' => $data]);
@@ -410,10 +501,23 @@ class CollegeArController extends Controller
         $college = $this->getCollege($college_name);
         $data = $this->getCommonData($college, $college_name);
 
-        $data['ads'] = Ad::select('id', 'title', 'ad_date', 'detail', 'file')
+        $slug_decoded = str_replace('-', ' ', $slug);
+        $data['ads'] = Ad::select('id', 'title', 'slug', 'ad_date', 'detail', 'file')
             ->with('photos')
-            ->where('slug', $slug)
-            ->firstOrFail();
+            ->where(function ($query) use ($slug, $slug_decoded) {
+                $query->where('slug', $slug)
+                    ->orWhere('slug', $slug_decoded)
+                    ->orWhere('title', $slug)
+                    ->orWhere('title', $slug_decoded);
+            })
+            ->where(function ($q) use ($college) {
+                $q->where('college_id', $college->id)
+                  ->orWhereNull('college_id');
+            })
+            ->first();
+
+        $data['recent_ads'] = $this->getSidebarAds($college->id);
+        $data['recent_news'] = $this->getSidebarNews($college->id);
 
         return view('ar/college/ads_details', ['data' => $data]);
     }

@@ -43,7 +43,8 @@ class AcademicProgramRequest extends FormRequest
                     ->whereNull('deleted_at')
                     ->ignore($this->route('academic_program')),
             ],
-            'credit_hours' => 'nullable|string',
+            'NOOFYEARSNO' => 'nullable|integer',
+            'NOOFSEM' => 'nullable|integer',
             'active' => 'boolean',
             'file' => 'sometimes|mimetypes:application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf',
         ];

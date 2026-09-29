@@ -39,7 +39,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
 
 const semesterResults = ref([
   { code: 'CS101', name: 'مقدمة في علوم الحاسوب', credits: 3, score: 85, grade: 'A' },

@@ -1,12 +1,12 @@
 <template>
-    <v-container>
+    <v-container fluid class="px-md-8 px-4">
         <v-card>
             <Table
                 :id="id"
                 ref="table"
                 :url="url"
                 :headers="headers"
-                title="تنسيب الصفحات للمستخدمين"
+                toolbar_title="تنسيب الصفحات للمستخدمين"
                 @edit-item="editItem"
                 :fullscreen="fullscreen"
                 :showInsertButton="false"
@@ -19,15 +19,13 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, onBeforeMount, ref, toRaw, watch } from "vue";
 import { useField, useForm } from "vee-validate";
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from "zod";
 import axios from "axios";
 import { route } from "ziggy-js";
+import UserPagesForm from "./userPagesForm.vue";
 
-const Table = defineAsyncComponent(() => import("../components/Table.vue"));
-const userPagesForm = defineAsyncComponent(() => import("../pages/userPagesForm.vue"));
 
 const url = route('users.index')
 const headers = [
@@ -66,9 +64,17 @@ const form_items_types = zod.object({
   university_no: zod.string({ required_error: "ادخل الرقم الجامعي" }).trim().min(1, { message: 'ادخل الرقم الجامعي' })
 });
 
-const img_obj = zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-  .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-  .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`);
+const img_obj = zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+  .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+  .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`);
 
 const validationSchema = toTypedSchema(zod.discriminatedUnion('method', [
   form_items_types.merge(zod.object({
@@ -111,31 +117,41 @@ const save = handleSubmit(async (values) => {
 
     let temp: Array<any> = [];
     SubmitLoading.value = true;
-    if (id.value > -1) {
-        formData.append("_method", "put");
-        await axios
-            .post(url + "/" + id.value, formData, {
-                headers: { "content-type": "multipart/form-data" },
-            })
-            .then((result) => {
-                Object.entries(result.data.message).forEach((item) => {
-                    temp.push(toRaw(ErrorMsg.find((a: any) => a.field == item[0])));
+    try {
+        if (id.value > -1) {
+            formData.append("_method", "put");
+            await axios
+                .post(url + "/" + id.value, formData, {
+                    headers: { "content-type": "multipart/form-data" },
+                })
+                .then((result) => {
+                    Object.entries(result.data.message).forEach((item) => {
+                        temp.push(toRaw(ErrorMsg.find((a: any) => a.field == item[0])));
+                    });
+                    table.value.PopulateTable(result.data.status, temp);
+                })
+                .catch((err) => {
+                    console.error(err);
                 });
-                table.value.PopulateTable(result.data.status, temp);
-            });
-    } else {
-        await axios
-            .post(url, formData, {
-                headers: { "content-type": "multipart/form-data" },
-            })
-            .then((result) => {
-                Object.entries(result.data.message).forEach((item) => {
-                    temp.push(toRaw(ErrorMsg.find((a: any) => a.field == item[0])));
+        } else {
+            await axios
+                .post(url, formData, {
+                    headers: { "content-type": "multipart/form-data" },
+                })
+                .then((result) => {
+                    Object.entries(result.data.message).forEach((item) => {
+                        temp.push(toRaw(ErrorMsg.find((a: any) => a.field == item[0])));
+                    });
+                    table.value.PopulateTable(result.data.status, temp);
+                })
+                .catch((err) => {
+                    console.error(err);
                 });
-                table.value.PopulateTable(result.data.status, temp);
-            });
+        }
+    } finally {
+        SubmitLoading.value = false;
     }
-    SubmitLoading.value = false;
+
     // close();
 });
 

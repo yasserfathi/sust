@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Ad;
 use App\Models\AlbumPhoto;
 use App\Models\College;
+use App\Models\CollegeGallery;
 use App\Models\DeanOfCollege;
 use App\Models\News;
 use App\Models\Page;
+use App\Models\HeadAdministrativePosition;
 use App\Models\ViceChancellor;
 use Illuminate\Http\Request;
 
@@ -16,48 +18,78 @@ class HomeController extends Controller
 {
 	private function getSharedData()
 	{
+		$entities = \Illuminate\Support\Facades\Cache::rememberForever(\App\Services\HomeCacheService::CACHE_KEY_SHARED_COLLEGES, function () {
+			return College::select('id', 'name', 'name_en', 'slug', 'college_type')
+				->where('active', 1)
+				->get();
+		});
+
 		return [
-			'colleges' => College::select('name', 'name_en', 'slug')->where('active', 1)
-				->where('id', '!=', 1)->where('college_type', 'college')->get(),
-			'deanships' => College::select('name', 'name_en', 'slug')->where('active', 1)->where('college_type', 'deanship')->get(),
-			'centers' => College::select('name', 'name_en', 'slug')->where('active', 1)->where('college_type', 'center')->get(),
+			'colleges' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['college']))->where('id', '!=', 1)->values(),
+			'deanships' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['deanship']))->values(),
+			'centers' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['center', 'institute']))->sortBy(fn($c) => $c->getRawOriginal('college_type'))->values(),
 			'recent_news' => News::select('id', 'title', 'slug')
 				->where('active', 1)
 				->where('lang', 1)
 				->orderBy('priority', 'desc')
-				->orderBy('id', 'desc')
+				->orderByDesc('id')
 				->limit(3)
 				->get()
 		];
 	}
 	public function index(Request $request)
 	{
-		$data = $this->getSharedData();
+		$data = \Illuminate\Support\Facades\Cache::rememberForever(\App\Services\HomeCacheService::CACHE_KEY_HOME_AR, function () {
+			$shared = $this->getSharedData();
 
-		$data['gallery'] = AlbumPhoto::select('title', 'thumb_img', 'img')
-			->where('album_id', 1)
-			->limit(3)
-			->get();
+			// Get featured home gallery photos (up to 5 photos) from CollegeGallery or Album 1
+			$galleryRecord = null;
+			if (\Illuminate\Support\Facades\Schema::hasTable('college_galleries')) {
+				$galleryRecord = CollegeGallery::where('college_id', 1)->first()
+					?? CollegeGallery::latest('id')->first();
+			}
 
-		$ads = Ad::select('id', 'title', 'ad_date', 'detail_portion', 'slug')
-			->with('photos')
-			->where('lang', 1)
-			->orderByRaw('priority desc')
-			->orderByDesc('id')
-			->limit(4)
-			->get();
+			if ($galleryRecord && !empty($galleryRecord->photos)) {
+				$photoIds = explode(',', $galleryRecord->photos);
+				$gallery = AlbumPhoto::select('title', 'thumb_img', 'img')
+					->whereIn('id', $photoIds)
+					->limit(5)
+					->get();
+			} else {
+				$gallery = AlbumPhoto::select('title', 'thumb_img', 'img')
+					->where('album_id', 1)
+					->limit(5)
+					->orderByDesc('id')
+					->get();
+			}
 
-		$news = News::select('id', 'title', 'news_date', 'detail_portion', 'slug')
-			->withFirstImage()
-			->where('active', 1)
-			->where('lang', 1)
-			->orderByRaw('priority desc')
-			->orderByDesc('id')
-			->limit(3)
-			->get();
+			$ads = Ad::select('id', 'title', 'ad_date', 'detail_portion', 'slug')
+				->with('photos')
+				->where('lang', 1)
+				->where('active', 1)
+				->orderByRaw('priority desc')
+				->orderByDesc('id')
+				->limit(4)
+				->get();
 
-		$data['ads'] = $ads;
-		$data['news'] = $news;
+			$news = News::select('id', 'title', 'news_date', 'detail_portion', 'slug')
+				->with(['photos' => function ($q) {
+					$q->select('album_photos.id', 'album_photos.img', 'album_photos.thumb_img', 'album_photos.title');
+				}])
+				->withFirstImage()
+				->where('active', 1)
+				->where('lang', 1)
+				->orderByRaw('priority desc')
+				->orderByDesc('id')
+				->limit(3)
+				->get();
+
+			return array_merge($shared, [
+				'gallery' => $gallery,
+				'ads' => $ads,
+				'news' => $news,
+			]);
+		});
 
 		return view('ar/home', ['data' => $data]);
 	}
@@ -131,8 +163,8 @@ class HomeController extends Controller
 		// Process Leadership Data
 		foreach ($data['leadership'] as $key_person) {
 			$staff = $key_person->user->staff_latest_by_id ?? $key_person->user->staff_latest;
-			$job = $staff->job_title_en ?? '';
-			$rank = $staff->rank_en ?? '';
+			$job = $staff->grade_en ?? '';
+			$rank = $staff->grade_en ?? '';
 
 			$title_ar = '';
 			if (stripos($job, 'Associate Professor') !== false || stripos($job, 'Assistant Professor') !== false || stripos($rank, 'Associate Professor') !== false || stripos($rank, 'Assistant Professor') !== false) {
@@ -150,10 +182,12 @@ class HomeController extends Controller
 			$key_person->position_ar = $position_ar;
 		}
 
+
+
 		if ($data['vice_chancellor']) {
 			$vc_staff = $data['vice_chancellor']->user->staff_latest_by_id ?? $data['vice_chancellor']->user->staff_latest;
-			$vc_job = $vc_staff->job_title_en ?? '';
-			$vc_rank = $vc_staff->rank_en ?? '';
+			$vc_job = $vc_staff->grade_en ?? '';
+			$vc_rank = $vc_staff->grade_en ?? '';
 
 			$vc_title_ar = '';
 			if (stripos($vc_job, 'Associate Professor') !== false || stripos($vc_job, 'Assistant Professor') !== false || stripos($vc_rank, 'Associate Professor') !== false || stripos($vc_rank, 'Assistant Professor') !== false) {
@@ -163,6 +197,42 @@ class HomeController extends Controller
 			}
 			$data['vice_chancellor']->user_title_ar = $vc_title_ar;
 		}
+
+		$data['university_ranks'] = HeadAdministrativePosition::select('id', 'administrative_positions_id', 'college_id', 'user_id', 'start_date', 'end_date')
+			->with([
+				'user:id,name,name_en,img',
+				'user.staff_latest',
+				'user.staff_latest_by_id',
+				'administrativePosition'
+			])->whereHas('user', function ($q) {
+				$q->where('active', 1);
+			})->whereNull('end_date')
+			->orderBy('id')->get();
+
+		foreach ($data['university_ranks'] as $rank_person) {
+			$staff = $rank_person->user->staff_latest_by_id ?? $rank_person->user->staff_latest;
+			$job = $staff->grade_en ?? '';
+			$staff_rank = $staff->grade_en ?? '';
+
+			$title_ar = '';
+			if (stripos($job, 'Associate Professor') !== false || stripos($job, 'Assistant Professor') !== false || stripos($staff_rank, 'Associate Professor') !== false || stripos($staff_rank, 'Assistant Professor') !== false) {
+				$title_ar = 'دكتور/ ';
+			} elseif (stripos($job, 'Professor') !== false || stripos($staff_rank, 'Professor') !== false) {
+				$title_ar = 'بروفيسور/ ';
+			}
+			$rank_person->user_title_ar = $title_ar;
+		}
+
+		$data['university_ranks'] = $data['university_ranks']->sortBy(function ($item) {
+			$name = $item->administrativePosition->title ?? ($item->administrativePosition->title_en ?? '');
+			
+			if (strpos(strtolower($name), 'نائب') !== false || strpos(strtolower($name), 'deputy') !== false) return 1;
+			if (strpos(strtolower($name), 'وكيل') !== false || strpos(strtolower($name), 'principal') !== false) return 2;
+			if (strpos(strtolower($name), 'أمين') !== false || strpos(strtolower($name), 'secretary') !== false) return 3;
+			if (strpos(strtolower($name), 'كرسي') !== false || strpos(strtolower($name), 'chair') !== false) return 4;
+			
+			return 99;
+		})->values();
 
 		return view('ar/leadership', compact("data"));
 	}
@@ -178,6 +248,7 @@ class HomeController extends Controller
 		return view('ar/vice_chancellor_message', compact("data"));
 	}
 
+
 	public function sust_leaders(Request $request)
 	{
 		$data = $this->getSharedData();
@@ -188,18 +259,71 @@ class HomeController extends Controller
 
 		$data['vice_chancellor'] = ViceChancellor::select('id', 'college_id', 'user_id')
 			->with([
-				'user:id,name,img',
-				'user.staff_latest:staff_employs.id,staff_employs.user_id',
+				'user:id,name,name_en,slug,img',
+				'user.staff_latest',
+				'user.staff_latest_by_id',
 				'college:id,name',
 			])->whereHas('user', function ($q) {
 				$q->where('active', 1);
 			})->whereNull('end_date')
 			->first();
 
+		if ($data['vice_chancellor'] && $data['vice_chancellor']->user) {
+			$vc_staff = $data['vice_chancellor']->user->staff_latest_by_id ?? $data['vice_chancellor']->user->staff_latest;
+			$vc_job = $vc_staff ? ($vc_staff->grade_en ?? '') : '';
+			$title_ar = 'بروفيسور/ ';
+			if (stripos($vc_job, 'Associate') !== false || stripos($vc_job, 'Assistant') !== false) {
+				$title_ar = 'دكتور/ ';
+			} elseif (stripos($vc_job, 'Professor') !== false) {
+				$title_ar = 'بروفيسور/ ';
+			}
+			$data['vice_chancellor']->user_title_ar = $title_ar;
+		}
+
+		$data['university_ranks'] = HeadAdministrativePosition::select('id', 'administrative_positions_id', 'college_id', 'user_id', 'start_date', 'end_date')
+			->with([
+				'user:id,name,name_en,slug,img',
+				'user.staff_latest',
+				'user.staff_latest_by_id',
+				'administrativePosition'
+			])->whereHas('user', function ($q) {
+				$q->where('active', 1);
+			})->whereNull('end_date')
+			->orderBy('id')->get();
+
+		foreach ($data['university_ranks'] as $rank_person) {
+			$staff = null;
+			if ($rank_person->user) {
+				$staff = $rank_person->user->staff_latest_by_id ?? $rank_person->user->staff_latest;
+			}
+			$job = $staff ? ($staff->grade_en ?? '') : '';
+			$staff_rank = $staff ? ($staff->grade_en ?? '') : '';
+
+			$title_ar = '';
+			if (stripos($job, 'Associate Professor') !== false || stripos($job, 'Assistant Professor') !== false || stripos($staff_rank, 'Associate Professor') !== false || stripos($staff_rank, 'Assistant Professor') !== false) {
+				$title_ar = 'دكتور/ ';
+			} elseif (stripos($job, 'Professor') !== false || stripos($staff_rank, 'Professor') !== false) {
+				$title_ar = 'بروفيسور/ ';
+			}
+			$rank_person->user_title_ar = $title_ar;
+		}
+
+		$data['university_ranks'] = $data['university_ranks']->sortBy(function ($item) {
+			$name = $item->administrativePosition->title ?? ($item->administrativePosition->title_en ?? '');
+			
+			if (strpos(strtolower($name), 'نائب') !== false || strpos(strtolower($name), 'deputy') !== false) return 1;
+			if (strpos(strtolower($name), 'وكيل') !== false || strpos(strtolower($name), 'principal') !== false) return 2;
+			if (strpos(strtolower($name), 'أمين') !== false || strpos(strtolower($name), 'secretary') !== false) return 3;
+			if (strpos(strtolower($name), 'كرسي') !== false || strpos(strtolower($name), 'chair') !== false) return 4;
+			
+			return 99;
+		})->values();
+
 		$leaders = DeanOfCollege::select('id', 'college_id', 'user_id')
 			->with([
-				'user:id,name,img',
-				'user.staff_latest:staff_employs.id,staff_employs.user_id',
+				'user:id,name,name_en,slug,img',
+				'user.staff_latest',
+				'user.staff_latest_by_id',
 				'college:id,name,college_type',
 			])->whereHas('user', function ($q) {
 				$q->where('active', 1);
@@ -208,6 +332,20 @@ class HomeController extends Controller
 				$q->where('active', 1);
 			})->whereNull('end_date')
 			->orderBy('college_id')->orderByDesc('start_date')->get();
+
+		foreach ($leaders as $leader) {
+			$staff = $leader->user->staff_latest_by_id ?? $leader->user->staff_latest;
+			$job = $staff ? ($staff->grade_en ?? '') : '';
+			$staff_rank = $staff ? ($staff->grade_en ?? '') : '';
+
+			$title_ar = '';
+			if (stripos($job, 'Associate Professor') !== false || stripos($job, 'Assistant Professor') !== false || stripos($staff_rank, 'Associate Professor') !== false || stripos($staff_rank, 'Assistant Professor') !== false) {
+				$title_ar = 'دكتور/ ';
+			} elseif (stripos($job, 'Professor') !== false || stripos($staff_rank, 'Professor') !== false) {
+				$title_ar = 'بروفيسور/ ';
+			}
+			$leader->user_title_ar = $title_ar;
+		}
 
 		$data['leaders_grouped'] = $leaders->groupBy(function ($item) {
 			return $item->college->getRawOriginal('college_type');
@@ -222,7 +360,7 @@ class HomeController extends Controller
 		$data['banner'] = url('/images/gallery/vision.jpg'); // Fallback banner
 
 		$data['vice_chancellors'] = ViceChancellor::select('id', 'user_id', 'start_date', 'end_date')
-			->with('user:id,name,img')
+			->with('user:id,name,name_en,img')
 			->whereNotNull('end_date')
 			->orderBy('start_date', 'asc')
 			->get();
@@ -237,7 +375,7 @@ class HomeController extends Controller
 		$data['khartoum_state'] = Page::select('detail', 'img')
 			->where('lang', 1)
 			->where('slug', 'khartoum_state')
-			->firstorfail();
+			->first();
 		return view('ar/khartoum_state', compact("data"));
 	}
 
@@ -245,11 +383,11 @@ class HomeController extends Controller
 	{
 		$data = $this->getSharedData();
 
-		$data['university_campuses'] = Page::select('detail', 'img')
-			->where('lang', 1)
-			->where('slug', 'university_campuses')
-			->firstorfail();
-		return view('ar/university_campuses', compact("data"));
+		$data['university_campuses'] = Page::select('detail', 'img', 'title')
+			->whereIn('slug', ['sust_campuses', 'university_campuses'])
+			->first();
+
+		return view('ar/sust_campuses', compact("data"));
 	}
 
 	public function sust_mission_vision_goals(Request $request)
@@ -259,19 +397,44 @@ class HomeController extends Controller
 		$data['sust_mission_vision_goals'] = Page::select('detail', 'img')
 			->where('lang', 1)
 			->where('slug', 'sust_mission_vision_goals')
-			->firstorfail();
+			->first();
 		return view('ar/sust_mission_vision_goals', compact("data"));
 	}
 
-	public function medicale_campus(Request $request)
+	public function medical_campus(Request $request)
 	{
 		$data = $this->getSharedData();
 
-		$data['medicale_campus'] = Page::select('detail', 'img')
+		$data['medical_campus'] = Page::select('detail', 'img')
 			->where('lang', 1)
-			->where('slug', 'medicale_campus')
-			->firstorfail();
-		return view('ar/medicale_campus', compact("data"));
+			->where('slug', 'medical_campus')
+			->first();
+		return view('ar/medical_campus', compact("data"));
+	}
+
+	public function campus_detail(Request $request, $slug)
+	{
+		$data = $this->getSharedData();
+
+		// Check with given slug or slug with _campus suffix (e.g. western -> western_campus)
+		$possibleSlugs = [$slug];
+		if (!str_ends_with($slug, '_campus')) {
+			$possibleSlugs[] = $slug . '_campus';
+		}
+
+		$data['page'] = Page::select('title', 'detail', 'img')
+			->where('lang', 1)
+			->whereIn('slug', $possibleSlugs)
+			->first();
+
+		if (!$data['page']) {
+			// Fallback: try finding without lang constraint or abort 404
+			$data['page'] = Page::select('title', 'detail', 'img')
+				->whereIn('slug', $possibleSlugs)
+				->firstOrFail();
+		}
+
+		return view('ar.dynamic_page', compact("data"));
 	}
 
 	public function dynamic_page(Request $request, $slug)

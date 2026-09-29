@@ -16,21 +16,30 @@ class AdEnController extends Controller
     public function index(Request $request)
     {
         $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
         $query = Ad::select('id', 'college_id', 'ad_date', 'duration', 'active', 'priority', \DB::raw('SUBSTRING(`title`, 1, 80) as `title`'))
             ->with('college:id,name')
             ->whereHas('college', function ($q) {
-                $q->where('user_id', 1);
+                $authUser = Auth::user();
+                if ($authUser->role != 1) {
+                    if ($authUser->is_college_rep) {
+                        $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                        $q->where('id', $collegeId);
+                    } else {
+                        $q->where('user_id', $authUser->id);
+                    }
+                }
             })
             ->where('lang', 2);
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', '%' . $search . '%')
+                $q->whereRaw('MATCH(title) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
                     ->orWhere('ad_date', 'like', '%' . $search . '%')
                     ->orWhereHas('college', function ($q2) use ($search) {
                         $q2->where('name', 'like', '%' . $search . '%');
@@ -39,9 +48,9 @@ class AdEnController extends Controller
         }
 
         if ($request->exists('orderby') && $request->exists('ascend')) {
-            $query->orderBy($request->get('orderby'), $request->get('ascend'));
+            $query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
         } else {
-            $query->orderBy('id', 'DESC');
+            $query->orderByDesc('id');
         }
 
         return response()->json(['result' => $query->paginate((int) $itemsPerPage)], 200);
@@ -63,6 +72,7 @@ class AdEnController extends Controller
                 $filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
                 $file_path = $file->storeAs('files', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
         $ad = Ad::create(array_merge(
@@ -71,6 +81,7 @@ class AdEnController extends Controller
             ['auth_id' => Auth::user()->id],
             ['active' => $active],
             ['file' => $file_path],
+            ['lang' => 2],
         ));
 
         if ($request->has('photos')) {
@@ -105,11 +116,12 @@ class AdEnController extends Controller
                     $file = $request->file('file');
                     $filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
                     $file_path = $file->storeAs('files', $filename, 'public');
-                    if (file_exists(public_path($record->file))) {
-                        unlink($record->file);
+                    if (Str::length($record->file) > 0 && file_exists(public_path($record->file))) {
+                        unlink(public_path($record->file));
                     }
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
         $active = 0;
@@ -146,10 +158,12 @@ class AdEnController extends Controller
     public function destroy(string $id)
     {
         $data = Ad::find($id);
-        if (file_exists(public_path($data->file))) {
-            unlink($data->file);
+        if ($data && Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
+            unlink(public_path($data->file));
         }
-        $data->delete();
+        if ($data) {
+            $data->delete();
+        }
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 

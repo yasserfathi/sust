@@ -13,15 +13,20 @@ class NewsController extends Controller
 {
 	private function getSharedData()
 	{
+		$entities = College::select('id', 'name_en', 'slug', 'college_type')
+			->where('active', 1)
+			->get();
+
 		return [
-			'colleges' => College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'college')->get(),
-			'deanships' => College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'deanship')->get(),
-			'centers' => College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'center')->get(),
-			'recent_news' => News::select('id', 'title', 'slug')
+			'colleges' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['college']))->where('id', '!=', 1)->values(),
+			'deanships' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['deanship']))->values(),
+			'centers' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['center', 'institute']))->sortBy(fn($c) => $c->getRawOriginal('college_type'))->values(),
+			'recent_news' => News::select('id', 'title', 'slug', 'news_date')
 				->where('active', 1)
 				->where('lang', 2)
 				->orderBy('priority', 'desc')
-				->orderBy('id', 'desc')
+				->orderByDesc('id')
+				->limit(3)
 				->get()
 		];
 	}
@@ -30,20 +35,20 @@ class NewsController extends Controller
 		$data = $this->getSharedData();
 
 		$data['news'] = News::select([
-			'id', // Always select ID, relationships/joins usually need it
+			'id',
 			'title',
 			'detail_portion',
 			'news_date',
 			'slug'
 		])
-			->withFirstImage() // Call Scope AFTER select to append the subquery
+			->withFirstImage()
 			->where('lang', 2)
 			->where('active', 1)
-			->orderByRaw('priority desc') // Use simple 'id' unless joining manually
-			->paginate(8);
+			->orderByDesc('id')
+			->paginate(9)->onEachSide(1);
 
 		if ($data['news']->isEmpty()) {
-			abort(404);
+			// abort(404);
 		}
 
 		return view('news_archive', ['data' => $data]);
@@ -53,11 +58,7 @@ class NewsController extends Controller
 		$data = $this->getSharedData();
 
 		$data['news'] = News::select('id', 'title', 'news_date', 'detail', 'file')
-			->with([
-				'photos' => function ($query) {
-					$query->select('album_photos.id', 'title', 'img');
-				}
-			])
+			->with(['photos'])
 			->where([
 				['lang', 2],
 				['slug', '=', $slug]

@@ -29,6 +29,7 @@ class AlbumPhotoController extends Controller
     {
         $validator = $request->validated();
         $img_path = $thumb_path = '';
+
         if ($request->hasFile('img') && $request->file('img')->isValid()) {
             try {
                 $manager = new ImageManager(new Driver());
@@ -43,7 +44,10 @@ class AlbumPhotoController extends Controller
                 $img_path = 'images/albums/' . $imagename;
                 $thumb_path = 'images/albums_thumbnail/' . $imagename_thumb;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
+        } else {
+            return response()->json(['message' => ['img' => 'الصورة مطلوبة'], 'status' => 409], 200);
         }
 
         AlbumPhoto::create(array_merge(
@@ -62,29 +66,34 @@ class AlbumPhotoController extends Controller
 
         $img_path = $record->img;
         $thumb_path = $record->thumb_img;
-        if ($request->hasFile('img') && $request->file('img')->isValid()) {
-            try {
-                $manager = new ImageManager(new Driver());
-                $img = $request->file('img');
+        if ($request->hasFile('img')) {
+            if ($request->file('img')->isValid()) {
+                try {
+                    $manager = new ImageManager(new Driver());
+                    $img = $request->file('img');
 
-                $rand = hexdec(uniqid());
-                $imagename = $rand . '.' . $img->getClientOriginalExtension();
-                $imagename_thumb = $rand . '_thumb.' . $img->getClientOriginalExtension();
+                    $rand = hexdec(uniqid());
+                    $imagename = $rand . '.' . $img->getClientOriginalExtension();
+                    $imagename_thumb = $rand . '_thumb.' . $img->getClientOriginalExtension();
 
-                if (Str::length($img_path) > 0 && file_exists(public_path($img_path))) {
-                    unlink($img_path);
+                    if (Str::length($img_path) > 0 && file_exists(public_path($img_path))) {
+                        unlink(public_path($img_path));
+                    }
+
+                    if (Str::length($thumb_path) > 0 && file_exists(public_path($thumb_path))) {
+                        unlink(public_path($thumb_path));
+                    }
+
+                    $manager->read($img)->scale(width: 300)->save(public_path('images/albums_thumbnail/' . $imagename_thumb));
+                    $img->storeAs('images/albums', $imagename, 'public');
+
+                    $img_path = 'images/albums/' . $imagename;
+                    $thumb_path = 'images/albums_thumbnail/' . $imagename_thumb;
+                } catch (Exception $e) {
+                    return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
                 }
-
-                if (Str::length($thumb_path) > 0 && file_exists(public_path($thumb_path))) {
-                    unlink($thumb_path);
-                }
-
-                $img->storeAs('images/albums', $imagename, 'public');
-                $manager->read($img)->scale(width: 300)->save(public_path('images/albums_thumbnail/' . $imagename_thumb));
-
-                $img_path = 'images/albums/' . $imagename;
-                $thumb_path = 'images/albums_thumbnail/' . $imagename_thumb;
-            } catch (Exception $e) {
+            } else {
+                return response()->json(['message' => ['img' => 'عفوا، حجم الصورة يتجاوز الحد المسموح به أو الملف غير صالح'], 'status' => 409], 200);
             }
         }
 
@@ -104,17 +113,15 @@ class AlbumPhotoController extends Controller
 
     public function destroy(AlbumPhoto $albumPhoto)
     {
-        $data = albumPhoto::findOrFail($albumPhoto->id);
-
-        if (Str::length($data->img) > 0 && file_exists(public_path($data->img))) {
-            unlink($data->img);
+        if (Str::length($albumPhoto->img) > 0 && file_exists(public_path($albumPhoto->img))) {
+            unlink(public_path($albumPhoto->img));
         }
 
-        if (Str::length($data->thumb_img) > 0 && file_exists(public_path($data->thumb_img))) {
-            unlink($data->thumb_img);
+        if (Str::length($albumPhoto->thumb_img) > 0 && file_exists(public_path($albumPhoto->thumb_img))) {
+            unlink(public_path($albumPhoto->thumb_img));
         }
 
-        $data->delete();
+        $albumPhoto->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 
@@ -135,6 +142,37 @@ class AlbumPhotoController extends Controller
             ->get();
         return response()->json([
             'album_photos' => $data
+        ], 200);
+    }
+
+    public function toggleActive(Request $request, $id)
+    {
+        $photo = AlbumPhoto::findOrFail($id);
+        $albumId = $photo->album_id;
+
+        $newStatus = $request->boolean('is_active');
+
+        if ($newStatus) {
+            $currentActiveCount = AlbumPhoto::where('album_id', $albumId)
+                ->where('is_active', true)
+                ->where('id', '!=', $id)
+                ->count();
+
+            if ($currentActiveCount >= 5) {
+                return response()->json([
+                    'message' => 'يمكنك اختيار 5 صور كحد أقصى لعرضها في الكلية',
+                    'status' => 422
+                ], 422);
+            }
+        }
+
+        $photo->is_active = $newStatus;
+        $photo->save();
+
+        return response()->json([
+            'message' => 'تم التحديث بنجاح',
+            'is_active' => $photo->is_active,
+            'status' => 200
         ], 200);
     }
 }

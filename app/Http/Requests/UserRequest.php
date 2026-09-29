@@ -37,8 +37,9 @@ class UserRequest extends FormRequest
             'univ_no' => 'nullable|string',
             'password' => 'nullable',
             'role' => 'required',
-            'phone' => ['required', Rule::unique('users')->ignore(request()->route('user'))],
+            'phone' => ['nullable', Rule::unique('users')->ignore(request()->route('user'))],
             'active' => 'required',
+            'is_college_rep' => 'nullable',
             'img' => 'nullable|mimes:jpeg,png,jpg'
         ];
     }

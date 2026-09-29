@@ -13,46 +13,56 @@ use Illuminate\Support\Facades\Http;
 class AlbumController extends Controller
 {
     public function index(Request $request)
-	{
-        $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-        if($itemsPerPage < 0 ){
-            $itemsPerPage = 0;
+    {
+        $itemsPerPage = (int) htmlspecialchars($request->get('items') ?? 15);
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
-        //collection serach News Title
-        $result_news_title = Album::select('id','college_id','title','title_en','description','active');
+        $query = Album::select('albums.id', 'albums.college_id', 'albums.title', 'albums.title_en', 'albums.description', 'albums.active')
+            ->with('college:id,name');
 
-        if(!empty($search)){
-            $result_news_title->where('title', 'like', '%'.$search.'%')
-                ->orWhere('title_en', 'like', '%'.$search.'%');
+        $authUser = Auth::user();
+        if ($authUser->role != 1) {
+            $query->whereHas('college', function ($q) use ($authUser) {
+                if ($authUser->is_college_rep) {
+                    $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                    $q->where('id', $collegeId);
+                } else {
+                    $q->where('user_id', $authUser->id);
+                }
+            });
+        } else {
+            $query->whereHas('college');
         }
 
-       $result_news_title->with('college:id,name')->whereHas('college', function ($query) use ($search) {
-                        $query->where('user_id',1);
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('MATCH(albums.title, albums.title_en) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
+                  ->orWhereHas('college', function ($cq) use ($search) {
+                      $cq->where('name', 'like', '%' . $search . '%');
                   });
-
-        // ===================================
-
-        //collection serach College Name
-        $result_college_name = Album::select('id','college_id','title','title_en','description','active');
-
-        $result_college_name->with('college:id,name')->whereHas('college', function ($query) use ($search) {
-                        $query->where('user_id',1);
-                        if(!empty($search)){
-                            $query->where('name', 'like', '%'.$search.'%');
-                        }
-                  });
-
-        $all = $result_news_title->get()->merge($result_college_name->get());
-
-        if($request->exists('orderby') && $request->exists('ascend')){
-            $all = $all->sortBy([[$request->get('orderby'),$request->get('ascend')]]);
+            });
         }
 
-        return response()->json(['result' => $all->paginate((int)$itemsPerPage)], 200);
+        if ($request->has('orderby') && $request->has('ascend')) {
+            $orderBy = $request->get('orderby');
+            $sortDirection = ($request->get('ascend') === 'true' || $request->get('ascend') === 'asc' || $request->get('ascend') == '1') ? 'asc' : 'desc';
 
-	}
+            if ($orderBy === 'college.name') {
+                $query->join('colleges', 'colleges.id', '=', 'albums.college_id')
+                      ->orderBy('colleges.name', $sortDirection);
+            } else {
+                $query->orderBy('albums.' . ltrim($orderBy, 'albums.'), $sortDirection);
+            }
+        } else {
+            $query->orderBy('albums.id', 'desc');
+        }
+
+        return response()->json(['result' => $query->paginate($itemsPerPage)], 200);
+    }
 
     public function show(Album $album)
     {
@@ -103,8 +113,8 @@ class AlbumController extends Controller
 
 	public function destroy(Album $album)
     {
-		// $album::find($album->id)->delete();
-		// return response()->json(['message' => 'deleted', 'status' => 200]);
+		$album->delete();
+		return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 
     public function list(Request $request)

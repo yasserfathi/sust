@@ -14,8 +14,8 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
         $search = htmlspecialchars($request->get('search') ?? '');
 
@@ -26,9 +26,9 @@ class CategoryController extends Controller
         }
 
         if (!$request->exists('orderby') && !empty($request->get('ascend'))) {
-            $data->orderBy($request->get('orderby'), $request->get('ascend'));
+            $data->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
         } else {
-            $data->orderBy('id', 'desc');
+            $data->orderByDesc('id');
         }
 
         $resource = $data->paginate((int)$itemsPerPage);

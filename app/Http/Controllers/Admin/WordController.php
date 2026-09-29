@@ -11,14 +11,13 @@ class WordController extends Controller
 {
 	public function index(Request $request)
 	{
-		$data = \DB::table('pages')->whereColumn([['page_title', '=', \DB::raw('"dean_word"')]])->get();
+		$data = \DB::table('pages')->where('page_title', 'dean_word')->get();
 		return view('admin.word')->with('data', $data);
 	}
 
 	public function store(Request $request)
 	{
-		$data = \DB::table('pages')->select('page_id','page_lang')->whereColumn([['page_title', '=', \DB::raw('"dean_word"')],
-						['page_lang', '=', \DB::raw('"'.$request->lang.'"')]])->get();
+		$data = \DB::table('pages')->select('page_id','page_lang')->where('page_title', 'dean_word')->where('page_lang', $request->lang)->get();
 		if(count((array)$data))
 		{
 
@@ -29,7 +28,9 @@ class WordController extends Controller
 						$file = $request->file('img');
 						$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
 						$img_path = $file->storeAs('images', $filename);
-					} catch (Exception $e){}
+					} catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
 				}
 			}
 
@@ -39,13 +40,15 @@ class WordController extends Controller
 						$file = $request->file('file');
 						$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
 						$file_path = $file->storeAs('files', $filename,'public');
-					} catch (Exception $e){}
+					} catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
 				}
 			}
 
-			\DB::table('pages')->insert(array('page_title'  => \DB::raw('"dean_word"'),'page_lang' =>  \DB::raw('"'.$request->lang.'"'),
-					'page_det_portion' =>   \DB::raw('"'.$request->portion.'"'),'page_img' =>   \DB::raw('"'.$img_path.'"'),
-					'page_file' =>   \DB::raw('"'.$file_path.'"'),'page_det' => \DB::raw('"'.htmlspecialchars($request->det_code).'"')));
+			\DB::table('pages')->insert(array('page_title'  => 'dean_word','page_lang' =>  $request->lang,
+					'page_det_portion' =>   $request->portion,'page_img' =>   $img_path,
+					'page_file' =>   $file_path,'page_det' => htmlspecialchars($request->det_code)));
 			return "success";
 		}
 		else
@@ -54,10 +57,10 @@ class WordController extends Controller
 
 	public function show(Request $request,$id)
 	{
-		$edit_data = \DB::table('pages')->whereColumn([['page_id', '=', \DB::raw('"'.$id.'"')]])->first();
+		$edit_data = \DB::table('pages')->where('page_id', $id)->first();
 		if($edit_data != '')
 		{
-			$data = \DB::table('pages')->select('page_id','page_lang')->whereColumn([['page_title', '=', \DB::raw('"dean_word"')]])->get();
+			$data = \DB::table('pages')->select('page_id','page_lang')->where('page_title', 'dean_word')->get();
 			return view('admin.word')->with('data', $data)->with('edit_data',$edit_data);
 		}
 		else
@@ -66,8 +69,8 @@ class WordController extends Controller
 
 	public function update(Request $request)
 	{
-		$arr = array('page_det_portion' =>   \DB::raw('"'.$request->portion.'"'),'page_det' => \DB::raw('"'.htmlspecialchars($request->det_code).'"'));
-		$docs = \DB::table('pages')->select('page_img','page_file')->whereColumn([['page_id', '=', \DB::raw('"'.$request->id.'"')]])->get();
+		$arr = array('page_det_portion' => $request->portion,'page_det' => htmlspecialchars($request->det_code));
+		$docs = \DB::table('pages')->select('page_img','page_file')->where('page_id', $request->id)->get();
 		if($request->hasFile('img')){
 			if($request->file('img')->isValid()) {
 				try {
@@ -75,8 +78,10 @@ class WordController extends Controller
 					$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
 					$img_path = $file->storeAs('images', $filename);
 					if($docs[0]->page_img != ''){ Storage::delete($docs[0]->page_img); }
-					$arr['page_img'] = \DB::raw('"'.$img_path.'"');
-				} catch (Exception $e){}
+					$arr['page_img'] = $img_path;
+				} catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
 			}
 		}
 		if($request->hasFile('file')){
@@ -86,23 +91,25 @@ class WordController extends Controller
 					$filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
 					$img_path = $file->storeAs('files', $filename);
 					if($docs[0]->page_file != ''){ Storage::delete($docs[0]->page_file); }
-					$arr['page_file'] = \DB::raw('"'.$img_path.'"');
-				} catch (Exception $e){}
+					$arr['page_file'] = $img_path;
+				} catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
 			}
 		}
 
-		\DB::table('pages')->where('page_id', \DB::raw('"'.$request->id.'"'))->update($arr);
+		\DB::table('pages')->where('page_id', $request->id)->update($arr);
 		return "success";
 	}
 
 	public function destroy(Request $request,$id)
 	{
-		$docs = \DB::table('pages')->select('page_img','page_file')->whereColumn([['page_id', '=', \DB::raw('"'. $request->id.'"')]])->get();
+		$docs = \DB::table('pages')->select('page_img','page_file')->where('page_id', $request->id)->get();
 		if(count($docs) != 0)
 		{
 			if($docs[0]->page_img != ''){ Storage::delete($docs[0]->page_img); }
 			if($docs[0]->page_file != ''){ Storage::delete($docs[0]->page_file); }
-			\DB::table('pages')->where('page_id', \DB::raw('"'.$request->id.'"'))->delete();
+			\DB::table('pages')->where('page_id', $request->id)->delete();
 		}
 		return redirect()->route('word_index');
 	}

@@ -1,13 +1,13 @@
 <template>
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table :id="id" ref="table" :url="url" :headers="headers" toolbar_title="فئات لوحة التحكم"
         @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close">
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
             <v-col cols="12">
-              <v-text-field id="title" name="title" label="عنوان الفئة" v-model="title" variant="underlined"
-                :error-messages="errors.title"></v-text-field>
+              <v-text-field id="title" name="title" label="عنوان الفئة" v-model="title" variant="outlined"
+                :error-messages="errors.title" density="comfortable" maxlength="255" counter="255"></v-text-field>
             </v-col>
             <v-col cols="12">
               <v-switch :label="`تنشيط الفئة`" id="active" name="active" v-model="active" color="#198754"
@@ -21,12 +21,9 @@
   </v-container>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue') )
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
-import { nextTick, ref } from 'vue';
 import axios from 'axios';
 import { isMatch } from 'lodash';
 
@@ -48,7 +45,7 @@ interface FormFields {
 
 const validationSchema = toTypedSchema(
   zod.object({
-    title: zod.string({ required_error: "ادخل عنوان الفئة" }).min(1, { message: "ادخل عنوان الفئة" }),
+    title: zod.string({ required_error: "ادخل عنوان الفئة" }).min(1, { message: "ادخل عنوان الفئة" }).max(255, { message: "يجب أن لا يتجاوز العنوان 255 حرفاً" }),
   })
 );
 

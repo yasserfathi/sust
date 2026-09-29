@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pages', function (Blueprint $table) {
-            $table->string('category')->nullable()->after('college_id');
-        });
+        if (!Schema::hasColumn('pages', 'category')) {
+            Schema::table('pages', function (Blueprint $table) {
+                $table->string('category')->nullable()->after('college_id');
+            });
+        }
     }
 
     /**

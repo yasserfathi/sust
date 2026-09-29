@@ -19,10 +19,8 @@ class StaffEmploy extends Model implements Auditable
         'id',
         'user_id',
         'department_id',
-        'job_title',
-        'job_title_en',
-        'rank',
-        'rank_en',
+        'grade',
+        'grade_en',
         'hire_date',
         'specialty',
         'subspecialty',
@@ -59,4 +57,57 @@ class StaffEmploy extends Model implements Auditable
             set: fn($value) => Carbon::createFromFormat('m/d/Y', $value)->format('Y-m-d'),
         )->shouldCache();
     }
+
+    protected function grade(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function ($value) {
+                $translations = [
+                    'Professor' => 'استاذ',
+                    'Associate Professor' => 'استاذ مشارك',
+                    'Assistant Professor' => 'استاذ مساعد',
+                    'Lecturer' => 'محاضر',
+                    'Teaching Assistant' => 'مساعد تدريس',
+                    'Teaching assistant' => 'مساعد تدريس',
+                ];
+                if (!empty($value) && isset($translations[$value])) {
+                    return $translations[$value];
+                }
+                if ($value === 'مساعد تدريس ج') {
+                    return 'مساعد تدريس';
+                }
+                if ($value === 'الاستاذ') {
+                    return 'استاذ';
+                }
+                return $value;
+            }
+        );
+    }
+
+    protected function gradeEn(): \Illuminate\Database\Eloquent\Casts\Attribute
+    {
+        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+            get: function ($value, $attributes) {
+                $translations = [
+                    'الاستاذ' => 'Professor',
+                    'استاذ' => 'Professor',
+                    'استاذ مشارك' => 'Associate Professor',
+                    'استاذ مساعد' => 'Assistant Professor',
+                    'محاضر' => 'Lecturer',
+                    'مساعد تدريس' => 'Teaching Assistant',
+                    'مساعد تدريس ج' => 'Teaching Assistant',
+                ];
+                if (!empty($value) && isset($translations[$value])) {
+                    return $translations[$value];
+                }
+                if (!empty($value)) {
+                    return $value;
+                }
+                $title = $attributes['grade'] ?? '';
+                return $translations[$title] ?? $title;
+            }
+        );
+    }
+
+
 }

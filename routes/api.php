@@ -2,7 +2,6 @@
 
 use App\Models\College;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -22,6 +21,8 @@ use App\Http\Controllers\Admin\CollegeGalleryController;
 use App\Http\Controllers\Admin\CollegeStrategicController;
 use App\Http\Controllers\Admin\DeanOfCollegeController;
 use App\Http\Controllers\Admin\DepartmentsController;
+use App\Http\Controllers\Admin\SectionsController;
+use App\Http\Controllers\Admin\SchoolsController;
 use App\Http\Controllers\Admin\HeadOfDepartmentController;
 use App\Http\Controllers\Admin\NewsController;
 use App\Http\Controllers\Admin\NewsEnController;
@@ -33,11 +34,15 @@ use App\Http\Controllers\Admin\StaffEmploysController;
 use App\Http\Controllers\Admin\StaffResumeController;
 use App\Http\Controllers\Admin\UserUploadFileController;
 use App\Http\Controllers\Admin\ViceChancellorController;
-use App\Http\Controllers\Admin\UniversityOfficialRankController;
+use App\Http\Controllers\Admin\HeadAdministrativePositionController;
 use App\Http\Controllers\Admin\WorkshopController;
 use App\Http\Controllers\Admin\WorkshopEnController;
 use App\Http\Controllers\Admin\StudentAuthController;
 use App\Http\Controllers\StudentDataController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AdministrativePositionController;
+use App\Http\Controllers\Admin\NewsMigrationController;
+
 
 
 // Route::get('/user', function (Request $request) {
@@ -47,14 +52,14 @@ use App\Http\Controllers\StudentDataController;
 Route::group(['prefix' => 'auth'], routes: function ($router) {
     Route::post('student_data', [StudentDataController::class, 'index'])->name('student_data');
     Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
-    Route::post('login', [AuthenticatedSessionController::class, 'store'])->name('login');
+    Route::post('login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:10,1')->name('login');
     // Route::post('/forgot-password', [PasswordResetLinkController::class, 'store'])->name('password.email');
 
     // Route::post('/reset-password', [NewPasswordController::class, 'store'])->name('password.store');
 });
 
 // Student Authentication
-Route::post('student/login', [App\Http\Controllers\Admin\StudentAuthController::class, 'login'])->name('student.login');
+Route::post('student/login', [App\Http\Controllers\Admin\StudentAuthController::class, 'login'])->middleware('throttle:10,1')->name('student.login');
 Route::post('student/register', [App\Http\Controllers\Admin\StudentAuthController::class, 'register'])->name('student.register');
 Route::post('student/setup-password', [App\Http\Controllers\Admin\StudentAuthController::class, 'setupPassword'])->name('student.setup-password');
 Route::post('student/forgot-password', [App\Http\Controllers\Admin\StudentAuthController::class, 'forgotPassword'])->name('student.forgot-password');
@@ -64,8 +69,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('auth/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
     Route::get('/user', function (Illuminate\Http\Request $request) {
-        return $request->user();
+        $user = $request->user();
+        $isDefault = (\Illuminate\Support\Facades\Hash::check(strtolower(trim($user->email ?? '')), $user->password) || \Illuminate\Support\Facades\Hash::check(strtolower(trim($user->univ_no ?? '')), $user->password) || \Illuminate\Support\Facades\Hash::check(trim($user->email ?? ''), $user->password) || \Illuminate\Support\Facades\Hash::check(trim($user->univ_no ?? ''), $user->password));
+        $userArray = $user->toArray();
+        $userArray['force_password_change'] = $isDefault;
+        return response()->json($userArray);
     })->name('user');
+
+    Route::get('/user/profile', [UserController::class, 'getProfile'])->name('user.profile');
+    Route::post('/user/profile', [UserController::class, 'updateProfile'])->name('user.update_profile');
+    Route::post('/user/change-password', [UserController::class, 'changePassword'])->name('user.change_password');
+
+    Route::get('dashboard/stats', [DashboardController::class, 'stats'])->name('dashboard.stats');
 
     Route::get('users-counts', function () {
         return response()->json(['result' => User::where('active', 1)->count(), 'status' => 200]);
@@ -74,7 +89,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('college-counts', function () {
         $counts = College::selectRaw("
             SUM(college_type = 'college') as colleges_count,
-            SUM(college_type = 'center') as centers_count,
+            SUM(college_type IN ('center', 'institute')) as centers_count,
             SUM(college_type = 'deanship') as deanships_count,
             COUNT(*) as total
         ")->first();
@@ -92,17 +107,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     //colleges
     Route::post('departments/list', [DepartmentsController::class, 'list'])->name('departments.list');
+    Route::post('sections/list', [SectionsController::class, 'list'])->name('sections.list');
+    Route::post('schools/list', [SchoolsController::class, 'list'])->name('schools.list');
     Route::get('category/list', [CategoryController::class, 'list'])->name('category.list');
     Route::get('colleges/list', [CollegesController::class, 'list'])->name('colleges.list');
+    Route::get('administrative_positions/list', [AdministrativePositionController::class, 'list'])->name('administrative_positions.list');
     Route::post('albums/list', [AlbumController::class, 'list'])->name('albums.list');
     Route::post('album_photos/list', [AlbumPhotoController::class, 'list'])->name('album_photos.list');
     Route::get('album_photos/list_photos/{id}', [AlbumPhotoController::class, 'list_photos'])->name('album_photos.list_photos');
+    Route::put('album_photos/{id}/toggle-active', [AlbumPhotoController::class, 'toggleActive'])->name('album_photos.toggle_active');
     Route::post('users/list', [UserController::class, 'list'])->name('users.list');
 
     Route::put('ads/priority/{id}', [AdController::class, 'priority'])->name('ads_priority');
     Route::put('ads_en/priority/{id}', [AdEnController::class, 'priority'])->name('ads_en_priority');
     Route::put('news/priority/{id}', [NewsController::class, 'priority'])->name('news_priority');
     Route::put('news_en/priority/{id}', [NewsEnController::class, 'priority'])->name('news_en_priority');
+
+    // News Migration from legacy site
+    Route::post('news/check-title', [NewsMigrationController::class, 'checkTitle'])->name('news.check_title');
+    Route::post('news/migrate-single', [NewsMigrationController::class, 'migrateSingle'])->name('news.migrate_single');
+    Route::post('news/migrate-batch', [NewsMigrationController::class, 'migrateBatch'])->name('news.migrate_batch');
 
     // PageController
     Route::get('page_categories/list', [PageController::class, 'categoryList'])->name('page_categories.list');
@@ -129,15 +153,21 @@ Route::middleware(['auth:sanctum'])->group(function () {
         'colleges' => CollegesController::class,
         'dean_of_college' => DeanOfCollegeController::class,
         'departments' => DepartmentsController::class,
+        'sections' => SectionsController::class,
+        'schools' => SchoolsController::class,
         'head_of_department' => HeadOfDepartmentController::class,
         'news' => NewsController::class,
         'news_en' => NewsEnController::class,
         'users' => UserController::class,
+        'administrative_positions' => AdministrativePositionController::class,
+    ]);
+    Route::put('users/{id}/reset-password', [UserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::apiResources([
         'staff_academic/staff_resume' => StaffResumeController::class,
         'staff_academic/staff_album_photos' => StaffAlbumPhotoController::class,
         'staff_employ' => StaffEmploysController::class,
         'vice_chancellors' => ViceChancellorController::class,
-        'university_official_ranks' => UniversityOfficialRankController::class,
+        'head_administrative_positions' => HeadAdministrativePositionController::class,
         'workshops' => WorkshopController::class,
         'workshops_en' => WorkshopEnController::class,
         'college_strategics' => CollegeStrategicController::class,
@@ -171,5 +201,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
     // Student email confirmation
     Route::post('student/confirm-email', [StudentAuthController::class, 'confirmEmail'])->name('student.confirm-email');
-
 });
+
+Route::fallback(function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('API 404: ' . $request->fullUrl() . ' Method: ' . $request->method());
+    return response()->json(['message' => 'API Route Not Found.'], 404);
+});
+
+require base_path('routes/debug.php');

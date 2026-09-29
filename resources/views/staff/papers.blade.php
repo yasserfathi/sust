@@ -1,4 +1,7 @@
-@extends('staff/layout')
+@extends('staff.layout')
+
+@section('title', 'Papers')
+
 
 @section('content')
     <!-- Hero Section -->
@@ -9,7 +12,7 @@
                     <div class="col-lg-8 order-2 order-lg-1">
                         <h2 class="hero-welcome">{{ $user->name }}</h2>
                         <h1 class="hero-name-large">
-                            {{ $job_titles[$user->staff_latest?->job_title ?? ''] ?? ($user->staff_latest?->job_title ?? '') }}
+                            {{ $grades[$user->staff_latest?->grade ?? ''] ?? ($user->staff_latest?->grade ?? '') }}
                         </h1>
                         <p class="hero-role">
                             كلية {{ $user->staff_latest?->department?->college?->name ?? '' }}
@@ -17,7 +20,7 @@
                     </div>
                     <div class="col-lg-4 order-1 order-lg-2 text-center mb-4 mb-lg-0">
                         <div class="hero-profile-frame">
-                            <img src="{{ asset($user->img) }}" alt="{{ $user->name }}" class="img-fluid">
+                            <img src="{{ versioned_asset($user->img) }}" alt="{{ $user->name }}" class="img-fluid">
                         </div>
                     </div>
                 </div>
@@ -31,7 +34,7 @@
                 <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
                         <h3 class="section-header m-0">كل الأبحاث والمنشورات</h3>
-                        <a href="{{ route('staff_home', $user?->name_en ?? '') }}"
+                        <a href="{{ route('staff_home', $user?->slug ?? '') }}"
                             class="text-primary text-decoration-none fw-bold">
                             <i class="icofont-arrow-right"></i> عودة للملف الشخصي
                         </a>
@@ -41,7 +44,6 @@
                         <div class="pub-card d-flex gap-3 mb-4 align-items-start">
                             <div class="flex-grow-1">
                                 <h5 class="fw-bold mb-2">{{ $paper->item_val }}</h5>
-                                <p class="text-muted small mb-2">{{ $paper->created_at?->format('Y-m-d') }}</p>
                                 <!-- <a href="#" class="btn btn-sm btn-outline-primary rounded-pill">View PDF</a> -->
                             </div>
                         </div>

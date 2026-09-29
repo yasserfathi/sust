@@ -43,6 +43,21 @@ class News extends Model implements Auditable
                     ->orderBy('news_album_photo.id'); // Keeps photos in order of selection
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($news) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::deleted(function ($news) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::restored(function ($news) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+    }
+
     /* -----------------------------------------------------------------
      |  Accessors & Mutators
      | -----------------------------------------------------------------

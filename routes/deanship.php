@@ -8,16 +8,16 @@ use App\Http\Controllers\ar\CollegeArController;
 Route::group(['prefix' => 'deanship', 'middleware' => 'cache.prevent'], function () {
     Route::get('/{name}', [CollegeController::class, 'index'])->name('deanship_home');
     Route::get('/{name}/about', [CollegeController::class, 'about'])->name('deanship_about');
-    Route::get('/{name}/activities', [CollegeController::class, 'activities']);
-    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives']);
+    Route::get('/{name}/activities', [CollegeController::class, 'activities'])->name('deanship_activities');
+    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives'])->name('deanship_vision_mission_objectives');
     Route::get('/{name}/dean_message', [CollegeController::class, 'dean_message'])->name('deanship_dean_message');
     Route::get('/{name}/department/{dept_name}', [CollegeController::class, 'about_department'])->name('deanship_about_department');
     Route::get('/{name}/department/{dept_name}/programs', [CollegeController::class, 'department_programs'])->name('deanship_department_programs');
     // News & Ads
     Route::get('/{name}/news', [CollegeController::class, 'archive'])->name('deanship_news_archive');
     Route::get('/{name}/news/details/{slug}', [CollegeController::class, 'details'])->name('deanship_news_detail');
-    Route::get('/{name}/ads', [CollegeController::class, 'archive'])->name('deanship_ads_archive');
-    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'details'])->name('deanship_ads_detail');
+    Route::get('/{name}/ads', [CollegeController::class, 'ads_archive'])->name('deanship_ads_archive');
+    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'ads_details'])->name('deanship_ads_detail');
     Route::get('/{name}/staff', [CollegeController::class, 'staff'])->name('deanship_staff');
     Route::get('/{name}/{slug}', [CollegeController::class, 'dynamic_page'])->name('deanship_dynamic_page');
 });

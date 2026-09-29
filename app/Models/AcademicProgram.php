@@ -17,7 +17,8 @@ class AcademicProgram extends Model implements Auditable
         'program_type',
         'program_name',
         'program_name_en',
-        'credit_hours',
+        'NOOFYEARSNO',
+        'NOOFSEM',
         'file',
         'active',
         'user_id'
@@ -41,6 +42,8 @@ class AcademicProgram extends Model implements Auditable
 
     protected $casts = [
         'active' => 'boolean',
+        'NOOFYEARSNO' => 'integer',
+        'NOOFSEM' => 'integer',
     ];
 
 }

@@ -33,8 +33,8 @@ class StaffAlbumPhotoController extends Controller
     {
         $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
 
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
 
         $search = htmlspecialchars($request->get('search') ?? '');
@@ -84,7 +84,7 @@ class StaffAlbumPhotoController extends Controller
 
         $result = StaffAlbumPhoto::select('id', 'user_id', 'title', 'title_en', 'img', 'thumb_img')
             ->whereHas('user.staff_latest.department')
-            ->where('user_id', DB::raw('"' . $id . '"'))->get();
+            ->where('user_id', $id)->get();
 
         $user = User::select('id', 'name')->with([
             'staff' => function ($query) {
@@ -96,7 +96,7 @@ class StaffAlbumPhotoController extends Controller
             'staff_latest.department.college' => function ($query) {
                 $query->select('id', 'name');
             },
-        ])->where('id',  DB::raw('"' . $id . '"'))->first();
+        ])->where('id', $id)->first();
 
         $result->each(function ($item) use ($user) {
             $item->department_id = $user->staff_latest->department_id;
@@ -125,13 +125,16 @@ class StaffAlbumPhotoController extends Controller
                 $imagename = $rand . '.' . $img->getClientOriginalExtension();
                 $imagename_thumb = $rand . '_thumb.' . $img->getClientOriginalExtension();
 
+                $manager->read($img)->scale(width: 300)->save(public_path('images/staff_albums_thumbnail/' . $imagename_thumb));
                 $img->storeAs('images/staff_albums', $imagename, 'public');
-                $manager->read($img)->scale(width: 300)->save(public_path('images/pages_thumbnail/' . $imagename_thumb));
 
                 $img_path = 'images/staff_albums/' . $imagename;
                 $thumb_path = 'images/staff_albums_thumbnail/' . $imagename_thumb;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
+        } else {
+            return response()->json(['message' => ['img' => 'الصورة مطلوبة'], 'status' => 409], 200);
         }
 
         StaffAlbumPhoto::create(array_merge(
@@ -145,16 +148,14 @@ class StaffAlbumPhotoController extends Controller
 
     public function destroy(StaffAlbumPhoto $StaffAlbumPhoto)
     {
-        $data = StaffAlbumPhoto::find($StaffAlbumPhoto->id);
-
-        if (Str::length($data->img) > 0 && file_exists(public_path($data->img))) {
-            unlink($data->img);
+        if (Str::length($StaffAlbumPhoto->img) > 0 && file_exists(public_path($StaffAlbumPhoto->img))) {
+            unlink(public_path($StaffAlbumPhoto->img));
         }
 
-        if (Str::length($data->thumb_img) > 0 && file_exists(public_path($data->thumb_img))) {
-            unlink($data->thumb_img);
+        if (Str::length($StaffAlbumPhoto->thumb_img) > 0 && file_exists(public_path($StaffAlbumPhoto->thumb_img))) {
+            unlink(public_path($StaffAlbumPhoto->thumb_img));
         }
-        $data->delete();
+        $StaffAlbumPhoto->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 

@@ -8,16 +8,16 @@ use App\Http\Controllers\ar\CollegeArController;
 Route::group(['prefix' => 'center', 'middleware' => 'cache.prevent'], function () {
     Route::get('/{name}', [CollegeController::class, 'index'])->name('center_home');
     Route::get('/{name}/about', [CollegeController::class, 'about'])->name('center_about');
-    Route::get('/{name}/activities', [CollegeController::class, 'activities']);
-    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives']);
+    Route::get('/{name}/activities', [CollegeController::class, 'activities'])->name('center_activities');
+    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives'])->name('center_vision_mission_objectives');
     Route::get('/{name}/dean_message', [CollegeController::class, 'dean_message'])->name('center_dean_message');
     Route::get('/{name}/department/{dept_name}', [CollegeController::class, 'about_department'])->name('center_about_department');
     Route::get('/{name}/department/{dept_name}/programs', [CollegeController::class, 'department_programs'])->name('center_department_programs');
     // News & Ads
     Route::get('/{name}/news', [CollegeController::class, 'archive'])->name('center_news_archive');
     Route::get('/{name}/news/details/{slug}', [CollegeController::class, 'details'])->name('center_news_detail');
-    Route::get('/{name}/ads', [CollegeController::class, 'archive'])->name('center_ads_archive');
-    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'details'])->name('center_ads_detail');
+    Route::get('/{name}/ads', [CollegeController::class, 'ads_archive'])->name('center_ads_archive');
+    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'ads_details'])->name('center_ads_detail');
     Route::get('/{name}/staff', [CollegeController::class, 'staff'])->name('center_staff');
     Route::get('/{name}/{slug}', [CollegeController::class, 'dynamic_page'])->name('center_dynamic_page');
 });

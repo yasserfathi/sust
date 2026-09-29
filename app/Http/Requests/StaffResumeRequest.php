@@ -16,6 +16,15 @@ class StaffResumeRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        if (auth()->check() && auth()->user()->role != 1) {
+            $this->merge([
+                'user_id' => auth()->user()->id,
+            ]);
+        }
+    }
+
     protected function failedValidation(Validator $validator)
     {
         $response = [

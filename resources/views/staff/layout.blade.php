@@ -1,24 +1,31 @@
+@php
+    $hasCv = false;
+    if (isset($user)) {
+        $hasCv = \App\Models\Staff_resume::where('user_id', $user->id)
+            ->where(function($q) {
+                $q->whereNotNull('file')->where('file', '!=', '')
+                  ->orWhereNotNull('file_en')->where('file_en', '!=', '');
+            })->exists();
+    }
+@endphp
 <!doctype html>
-<html class="no-js" lang="ar" dir="ltr">
+<html class="no-js" lang="en" dir="ltr">
 
 <head>
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>@yield('title', 'Staff Profile')</title>
-    <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('img/favicon.ico') }}">
+    @include('partials.seo-head')
 
-    <link rel="stylesheet" href="{{ asset('css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/animate.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/aos.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/magnific-popup.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/icofont.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/slick.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/swiper-bundle.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/style.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/profile.css') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ versioned_asset('img/favicon.ico') }}">
+
+
+    <link rel="stylesheet" href="{{ versioned_asset('css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('css/aos.min.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('css/icofont.min.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('css/style.min.css') }}">
+    <link rel="stylesheet" href="{{ versioned_asset('css/profile.css') }}?v=1.3">
     @stack('styles')
 </head>
 
@@ -26,7 +33,7 @@
     <div id="back__preloader">
         <div id="back__circle_loader"></div>
         <div class="back__loader_logo">
-            <img loading="lazy" src="{{ asset('images/gallery/logo_mini.png') }}" alt="Preload">
+            <img loading="lazy" src="{{ versioned_asset('images/gallery/logo_mini.png') }}" alt="Preload">
         </div>
     </div>
     <header>
@@ -37,7 +44,7 @@
                         <div class="headerarea__left">
                             <div class="headerarea__left__logo">
                                 <a href="{{ url('/') }}">
-                                    <img loading="lazy" src="{{ asset('images/gallery/sust-logo-en.png') }}"
+                                    <img loading="lazy" src="{{ versioned_asset('images/gallery/sust-logo-en.png') }}"
                                         alt="sust logo" class="img-fluid">
                                 </a>
                             </div>
@@ -47,9 +54,9 @@
                         <div class="headerarea__main__menu">
                             <nav>
                                 <ul>
-                                    <li><a class="headerarea__has__dropdown" href="{{ url('/') }}">Home</a></li>
-                                    <li><a href="#">CV</a></li>
-                                    <li><a href="#">Contact</a></li>
+                                    <li><a class="headerarea__has__dropdown" href="{{ route('staff_home', $user?->slug ?? '') }}">Home</a></li>
+                                    <li><a href="{{ $hasCv ? route('staff.cv', $user?->slug ?? '') : '#' }}">CV</a></li>
+                                    <li><a href="mailto:{{ $user?->email ?? '' }}">Contact</a></li>
 @php
     $currentRoute = Route::currentRouteName();
     $switchUrl = route('home_ar');
@@ -58,7 +65,7 @@
         if (Route::has($arRoute)) {
             try { $switchUrl = route($arRoute, Route::current()->parameters()); } catch (\Exception $e) {}
         } elseif (isset($user) && isset($user->name_en)) {
-            $switchUrl = route('staff_home_ar', $user->name_en);
+            $switchUrl = route('staff_home_ar', $user->slug);
         }
     }
 @endphp
@@ -75,7 +82,7 @@
                     <div class="col-6">
                         <div class="mobile-logo">
                             <a class="logo__dark" href="{{ url('/') }}">
-                                <img loading="lazy" src="{{ asset('images/gallery/sust-logo-en.png') }}" alt="logo">
+                                <img loading="lazy" src="{{ versioned_asset('images/gallery/sust-logo-en.png') }}" alt="logo">
                             </a>
                         </div>
                     </div>
@@ -98,9 +105,9 @@
                 <div class="mobile-navigation">
                     <nav>
                         <ul class="mobile-menu">
-                                    <li><a class="headerarea__has__dropdown" href="{{ url('/') }}">Home</a></li>
-                                    <li><a href="#">CV</a></li>
-                                    <li><a href="#}">Contact</a></li>
+                                     <li><a class="headerarea__has__dropdown" href="{{ route('staff_home', $user?->slug ?? '') }}">Home</a></li>
+                                     <li><a href="{{ $hasCv ? route('staff.cv', $user?->slug ?? '') : '#' }}">CV</a></li>
+                                     <li><a href="mailto:{{ $user?->email ?? '' }}">Contact</a></li>
                                     <li><a href="{{ $switchUrl }}">عربى</a></li>
                                 </ul>
                     </nav>
@@ -126,9 +133,19 @@
             </div>
         </div>
     </div>
-    @yield('content')
+    @if (session('error'))
+        <div class="container mt-3">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    @endif
+    <div data-aos="fade-in" data-aos-duration="1200" data-aos-delay="300" data-aos-once="true">
+        @yield('content')
+    </div>
 
-    <div class="footerarea">
+    <div class="footerarea" data-aos="fade-up" data-aos-duration="1000" data-aos-once="true" data-aos-anchor-placement="top-bottom">
         <div class="container">
             <div class="footerarea__copyright__wrapper footerarea__copyright__wrapper__2">
                 <div class="row">
@@ -150,23 +167,10 @@
             </div>
         </div>
     </div>
-    <script src="{{ asset('js/vendor/modernizr-3.5.0.min.js') }}"></script>
-    <script src="{{ asset('js/vendor/jquery-3.6.0.min.js') }}"></script>
-    <script src="{{ asset('js/popper.min.js') }}"></script>
-    <script src="{{ asset('js/bootstrap.min.js') }}"></script>
-    <script src="{{ asset('js/isotope.pkgd.min.js') }}"></script>
-    <script src="{{ asset('js/slick.min.js') }}"></script>
-    <script src="{{ asset('js/jquery.meanmenu.min.js') }}"></script>
-    <script src="{{ asset('js/ajax-form.js') }}"></script>
-    <script src="{{ asset('js/wow.min.js') }}"></script>
-    <script src="{{ asset('js/jquery.scrollUp.min.js') }}"></script>
-    <script src="{{ asset('js/imagesloaded.pkgd.min.js') }}"></script>
-    <script src="{{ asset('js/jquery.magnific-popup.min.js') }}"></script>
-    <script src="{{ asset('js/waypoints.min.js') }}"></script>
-    <script src="{{ asset('js/jquery.counterup.min.js') }}"></script>
-    <script src="{{ asset('js/plugins.js') }}"></script>
-    <script src="{{ asset('js/swiper-bundle.min.js') }}"></script>
-    <script src="{{ asset('js/main.js') }}"></script>
+    <script src="{{ versioned_asset('js/popper.min.js') }}"></script>
+    <script src="{{ versioned_asset('js/bootstrap.min.js') }}"></script>
+    <script src="{{ versioned_asset('js/plugins.js') }}"></script>
+    <script src="{{ versioned_asset('js/main.js') }}"></script>
     @stack('scripts')
 </body>
 

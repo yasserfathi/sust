@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('SANCTUM_STATEFUL_DOMAINS', '*')],
+    'allowed_origins' => [env('SANCTUM_STATEFUL_DOMAINS', env('APP_URL', 'http://localhost'))],
 
     'allowed_origins_patterns' => [],
 

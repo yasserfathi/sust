@@ -71,7 +71,7 @@
                             <v-text-field id="password_change" v-model="password_change"
                                 :type="showpassword ? 'text' : 'password'" name="password_change"
                                 :append-inner-icon="showpassword ? 'mdi-eye' : 'mdi-eye-off'" prepend-icon="mdi-lock"
-                                label="كلمة المرور" variant="underlined" autocomplete="new-password"
+                                label="كلمة المرور" variant="outlined" autocomplete="new-password"
                                 @click:append-inner="showpassword = !showpassword"></v-text-field>
                         </v-row>
                         <v-row>
@@ -79,16 +79,16 @@
                                 :type="showpassword ? 'text' : 'password'" name="password_change_confirm"
                                 :append-inner-icon="showpassword ? 'mdi-eye' : 'mdi-eye-off'"
                                 @click:append-inner="showpassword = !showpassword" prepend-icon="mdi-lock"
-                                label="تأكيد كلمة المرور" variant="underlined"></v-text-field>
+                                label="تأكيد كلمة المرور" variant="outlined"></v-text-field>
                         </v-row>
-                        <v-row>
-                            <v-btn color="green-darken-1" variant="flat" type="submit" class="ml-1">
-                                حفظ
-                            </v-btn>
-                            <v-btn color="grey-darken-1" variant="flat" @click="dialog = false">
-                                الغاء
-                            </v-btn>
-                        </v-row>
+                        <div class="d-flex justify-center mt-4">
+                            <v-btn color="green-darken-1" variant="elevated" type="submit" rounded="pill" class=" px-8">
+ حفظ
+ </v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill" class="ms-4 px-8">
+ الغاء
+ </v-btn>
+                        </div>
                     </v-col>
                 </v-card-text>
             </v-card>
@@ -97,7 +97,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, onBeforeMount, computed } from 'vue';
 import { useAuthStore } from '../store/index';
 import { useTheme } from 'vuetify';
 import axios from 'axios';
@@ -128,10 +127,10 @@ async function logout() {
     const result = await Swal.fire({
         title: "تأكيد تسجيل الخروج ؟",
         icon: 'warning',
-        confirmButtonColor: '#198754',
-        cancelButtonColor: '#d33',
-        confirmButtonText: 'موافق',
-        cancelButtonText: 'الغاء',
+        confirmButtonColor: '#d65440',
+        cancelButtonColor: '#424949',
+        confirmButtonText: 'نعم، تسجيل الخروج',
+        cancelButtonText: 'إلغاء',
         showCancelButton: true,
         showCloseButton: true
     });
@@ -139,10 +138,10 @@ async function logout() {
     if (result.isConfirmed) {
         try {
             await authStore.logout();
-            router.push('/');
         } catch (error) {
-            console.error("Logout failed:", error);
-            Swal.fire("Error", "Failed to logout", "error");
+            console.warn("Logout process finished:", error);
+        } finally {
+            router.push({ name: 'StudentLogin' }).catch(() => {});
         }
     }
 }

@@ -1,26 +1,34 @@
 <template>
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table ref="table" :id="id" :url="api_url" :headers="headers" toolbar_title="اضافة عميد كلية"
-        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close" transition="dialog-bottom-transition">
+        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close"
+        transition="dialog-bottom-transition">
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
-            <v-col cols="12" md="6" class="pt-0">
+            <v-col cols="12" md="6" class="pt-0" v-if="authStore?.user?.role === 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getDepartments($event)"
-                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" label="الكلية المراد تعيين عميد لها"
+                :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
             <v-col cols="12" md="6" class="pt-0">
-              <v-select id="department_id" name="department_id" :disabled="department_disabled" :items="departments" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-office-building" v-model="department_id" @update:modelValue="getUsers($event)"
-                label="اسماء الاقسام" :error-messages="errors.department_id" variant="underlined"></v-select>
+              <v-select id="source_college_id" name="source_college_id" :items="colleges" item-title="name"
+                density="comfortable" item-value="id" prepend-icon="mdi-bank" v-model="source_college_id"
+                @update:modelValue="getDepartments($event)" label="الكلية التي ينتمي لها الاستاذ"
+                variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
-              <v-select id="user_id" name="user_id" :disabled="user_disabled" :items="users" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-account-tie" v-model="user_id"
-                label="اعضاء هيئة التدريس" :error-messages="errors.user_id" variant="underlined"></v-select>
+            <v-col cols="12" md="4" class="pt-0" v-if="authStore?.user?.role === 1">
+              <v-select id="department_id" name="department_id" :disabled="department_disabled" :items="departments"
+                item-title="name" density="comfortable" item-value="id" prepend-icon="mdi-office-building"
+                v-model="department_id" @update:modelValue="getUsers($event)" label="اسماء الاقسام"
+                variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
+            <v-col cols="12" md="4" class="pt-0" v-if="authStore?.user?.role === 1">
+              <v-select id="user_id" name="user_id" :disabled="user_disabled" :items="users" item-title="name"
+                density="comfortable" item-value="id" prepend-icon="mdi-account-tie" v-model="user_id"
+                label="اعضاء هيئة التدريس" :error-messages="errors.user_id" variant="outlined"></v-select>
+            </v-col>
+            <v-col cols="12" md="4" class="pt-0">
               <date-picker label="تاريخ التعيين" id="start_date" name="start_date" v-model="start_date"
                 :error-messages="errors.start_date"></date-picker>
             </v-col>
@@ -32,17 +40,16 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, ref, onBeforeMount, nextTick,toRaw  } from 'vue';
+import { useAuthStore } from '../store/index';
+const authStore = useAuthStore();
 import { Form, useField, useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import { z as zod } from 'zod';
 import axios from 'axios';
 
-const Table = defineAsyncComponent(() => import('../components/Table.vue'));
-const DatePicker = defineAsyncComponent(() => import('../components/DatePicker.vue'));
 
 const api_url = route('dean_of_college.index');
-const url = api_url; 
+const url = api_url;
 const headers = [
   { title: 'اسم الكلية', key: 'college.name', align: 'center' },
   { title: 'اسم عضو هيئة التدريس', key: 'user.name', align: 'center' },
@@ -62,9 +69,9 @@ interface FormFields {
 }
 
 const validationSchema = toTypedSchema(zod.object({
-  college_id: zod.number({ required_error: "اختر اسم الكلية" }).positive({ message: "اختر اسم الكلية" }),
-  user_id: zod.number({ required_error: "اختر اسم عضو هيئة التدريس" }).positive({ message: "اختر اسم عضو هيئة التدريس" }),
-  start_date: zod.coerce.date({ required_error: "اختر تاريخ التعيين", invalid_type_error: "تاريخ التعيين غير صالح" }),
+  college_id: authStore?.user?.role !== 1 ? zod.any().nullish() : zod.number({ required_error: "اختر اسم الكلية" }).positive({ message: "اختر اسم الكلية" }),
+  user_id: authStore?.user?.role !== 1 ? zod.any().nullish() : zod.number({ required_error: "اختر اسم عضو هيئة التدريس" }).positive({ message: "اختر اسم عضو هيئة التدريس" }),
+  start_date: zod.any({ required_error: "اختر تاريخ التعيين", invalid_type_error: "تاريخ التعيين غير صالح" }),
 }));
 
 const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<FormFields>({
@@ -72,28 +79,34 @@ const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<Fo
 });
 
 const id = ref(-1);
-const colleges = ref<Array<{id: number, name: string}>>([]);
-const departments = ref<Array<{id: number, name: string}>>([]);
-const users = ref<Array<{id: number, name: string}>>([]);
+const colleges = ref<Array<{ id: number, name: string }>>([]);
+const departments = ref<Array<{ id: number, name: string }>>([]);
+const users = ref<Array<{ id: number, name: string }>>([]);
 
 const user_disabled = ref(true);
 const department_disabled = ref(true);
 
 const { value: college_id } = useField<number>('college_id');
+const { value: source_college_id } = useField<number>('source_college_id');
 const { value: department_id } = useField<number>('department_id');
 const { value: user_id } = useField<number>('user_id');
 const { value: start_date } = useField<Date>('start_date');
 
 start_date.value = new Date();
 
-let ErorrMsg = [{'field':'college_id','message':'البيانات موجودة مسبقا'},
-                {'field':'end_date','message':'تاريخ  التعيين أقل من تاريخ التعيين السابق'}]
+let ErorrMsg = [{ 'field': 'college_id', 'message': 'البيانات موجودة مسبقا' },
+{ 'field': 'end_date', 'message': 'تاريخ  التعيين أقل من تاريخ التعيين السابق' }]
 
 const save = handleSubmit(async (values) => {
   let temp: Array<any> = [];
   if (table.value) {
     table.value.SubmitLoading = true;
-    values.start_date = new Date(values.start_date.toString()).toLocaleDateString('sv-SE')
+      if (typeof values.start_date === 'string' && values.start_date.includes('-')) {
+    values.start_date = values.start_date;
+  } else {
+    const d = new Date(values.start_date);
+    values.start_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
     try {
       let result;
       if (id.value > -1 && !isMatch(currentItem.value, values)) {
@@ -102,15 +115,15 @@ const save = handleSubmit(async (values) => {
         result = await axios.post(url, values);
       }
 
-        if(result.data.message == 'The new start date is earlier than the previous one'){
-          temp.push({'field':'start_date','message':'تاريخ التعيين الجديد أسبق من تاريخ التعيين السابق' });
-        }
-        else{
-          Object.entries(result.data.message).forEach((item) => {
-            temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
-          });
+      if (result.data.message == 'The new start date is earlier than the previous one') {
+        temp.push({ 'field': 'start_date', 'message': 'تاريخ التعيين الجديد أسبق من تاريخ التعيين السابق' });
       }
-        table.value.PopulateTable(result.data.status, temp);
+      else {
+        Object.entries(result.data.message).forEach((item) => {
+          temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
+        });
+      }
+      table.value.PopulateTable(result.data.status, temp);
     } catch (error) {
       console.error('Error saving data:', error);
       // Handle error appropriately
@@ -129,32 +142,34 @@ function isMatch(item1: any, item2: any): boolean {
 
 function editItem(item: any) {
   if (!table.value) return;
-  
+
   item = toRaw(item);
   currentItem.value = item;
   table.value.disableEditButton = !table.value.disableEditButton;
-  
+
   if (table.value.disableEditButton) {
     id.value = item.id;
-    axios.get(`${api_url}/${item.id}`).then(response => {
+    axios.get(`${api_url}/${item.id}`).then(async response => {
       item = response.data.result;
-      console.log('Fetched item:', item);
-      department_disabled.value = user_disabled.value = false;
-      
       const deptId = item.user?.staff_latest?.department?.id || -1;
-      const deptName = item.user?.staff_latest?.department?.name || 'القسم غير متوفر';
+      const sourceCollegeId = item.user?.staff_latest?.department?.college_id || -1;
       
-      departments.value = [{ id: deptId, name: deptName }];
-      users.value = [{ id: item.user?.id || -1, name: item.user?.name || 'غير معروف' }];
+      if (sourceCollegeId !== -1) await getDepartments(sourceCollegeId);
+      if (deptId !== -1) await getUsers(deptId);
+
+      department_disabled.value = false;
+      user_disabled.value = false;
+
       start_date.value = new Date(item.start_date);
-      
+
       setValues({
         college_id: item.college?.id || -1,
+        source_college_id: sourceCollegeId,
         department_id: deptId,
         user_id: item.user?.id || -1,
-        start_date: new Date(item.start_date)
+        start_date: item.start_date
       });
-      
+
       table.value.disableEditButton = false;
       table.value.dialog = true;
     }).catch(error => {
@@ -168,21 +183,22 @@ function close() {
   nextTick(() => {
     id.value = -1;
     currentItem.value = null;
-    
+
     if (departments.value) {
       departments.value = [{ id: -1, name: 'اختر القسم' }];
     }
+    source_college_id.value = -1;
     department_id.value = -1;
-    
+
     if (users.value) {
       users.value = [{ id: -1, name: 'اختر عضو هيئة التدريس' }];
     }
     user_id.value = -1;
-    
+
     department_disabled.value = user_disabled.value = true;
     resetForm();
   });
-  
+
   if (table.value) {
     table.value.disableEditButton = false;
     table.value.dialog = false;
@@ -201,15 +217,15 @@ async function getColleges() {
 async function getDepartments(college_id: number) {
   try {
     const response = await axios.post(route("departments.list"), { college_id });
-    
+
     if (!response.data.departments || response.data.departments.length === 0) {
       departments.value = [{ id: -1, name: 'اختر القسم' }];
       department_id.value = -1;
       department_disabled.value = true;
-      
+
       users.value = [{ id: -1, name: 'اختر عضو هيئة التدريس' }];
       user_id.value = -1;
-      
+
       user_disabled.value = true;
     } else {
 

@@ -1,5 +1,6 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
   <v-data-table :headers="headers" :items="photos" :items-per-page-options="itemsPerPagelist" items-per-page="5"
     :loading="tableLoading" transition="dialog-bottom-transition" hide-default-footer disable-pagination hide-no-data
@@ -11,7 +12,7 @@
         <v-spacer></v-spacer>
         <v-dialog v-model="dialog" persistent max-width="1100px">
           <template v-slot:activator="{ props }">
-            <v-btn class="mb-2 bg-red" prepend-icon="mdi-plus" v-bind="props" ripple rounded="xl">
+            <v-btn class="mb-2 bg-red" prepend-icon="mdi-plus" v-bind="props" ripple rounded="xl" @click="(e) => e.currentTarget.blur()">
               اضافة بيانات
             </v-btn>
           </template>
@@ -24,23 +25,21 @@
               </v-btn>
             </v-toolbar>
             <v-card-text>
-              <v-container>
+              <v-container fluid class="px-md-8 px-4">
                 <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
                   <v-row>
                     <v-col cols="12" md="4">
-                      <v-text-field id="title" name="title" label="الوصف باللغة العربية" v-model="title"
-                        variant="underlined" :error-messages="errors.title"></v-text-field>
+                      <v-text-field autofocus id="title" name="title" label="الوصف باللغة العربية" v-model="title"
+                        variant="outlined" :error-messages="errors.title" density="comfortable" maxlength="255" counter="255"></v-text-field>
                     </v-col>
                     <v-col cols="12" md="4">
                       <v-text-field id="title_en" name="title_en" label="الوصف باللغة الانجليزية" v-model="title_en"
-                        variant="underlined" :error-messages="errors.title_en"></v-text-field>
+                        variant="outlined" :error-messages="errors.title_en" density="comfortable" maxlength="255" counter="255"></v-text-field>
                     </v-col>
-                    <v-col cols="12" :md="imagePath != undefined ? 3 : 4">
-                      <v-file-input type="file" id="img" name="img" ref="imgInput" show-size chips
-                        accept='image/*' @change="onSelectImage" label="اختر ملف الصورة" variant="underlined"
-                        :error-messages="errors.img"></v-file-input>
+                    <v-col cols="12" :md="imagePath != '' ? 3 : 4">
+                      <v-file-input type="file" id="img" name="img" v-model="img" show-size chips accept='image/*' label="اختر ملف الصورة" variant="outlined" :error-messages="errors.img" density="comfortable"></v-file-input>
                     </v-col>
-                    <v-col v-if="imagePath != undefined" cols="12" md="1">
+                    <v-col v-if="imagePath != ''" cols="12" md="1">
                       <v-img :src="BASE_URL + '/' + imageThumbPath" :lazy-src="BASE_URL + '/' + imageThumbPath"
                         :height="48" style="cursor: pointer" @click="showImageDialog(imagePath)">
                         <template v-slot:placeholder>
@@ -52,14 +51,13 @@
                     </v-col>
                   </v-row>
                 </Form>
-                <div class="mt-5" cols="12">
-                  <v-btn color="green-darken-1" variant="elevated" type="submit" :loading="SubmitLoading" @click="save"
-                    ripple rounded="xl">
-                    {{ btnText }}
-                  </v-btn>
-                  <v-btn color="grey-darken-1" class="mr-1" variant="elevated" @click="close" ripple rounded="xl">
-                    الغاء
-                  </v-btn>
+                <div class="d-flex justify-start mt-6">
+                  <v-btn color="green-darken-1" variant="elevated" type="submit" :loading="SubmitLoading" @click="save" rounded="pill" class=" px-8">
+ {{ btnText }}
+ </v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="close" rounded="pill" class="ms-4 px-8">
+ الغاء
+ </v-btn>
                 </div>
               </v-container>
             </v-card-text>
@@ -94,25 +92,25 @@
   </v-dialog>
 </v-card>
 </v-container>
+  </div>
 </template>
 <script lang="ts" setup>
-import { nextTick, onBeforeMount, computed, ref, toRaw, onMounted, watch } from 'vue';
 import { Form, useField, useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 
-const BASE_URL = import.meta.env.VITE_BASE_URL;
+const BASE_URL = window.location.origin;
 
 const album_id = 1;
 
 const url = route('album_photos.index');
 const headers = [
-  { title: 'الوصف باللغة العربية', key: 'title' },
-  { title: 'الوصف باللغة الانجليزية', key: 'title_en' },
-  { title: 'الصورة', key: 'thumb_img' },
-  { title: '', key: 'actions', sortable: false },
+  { title: 'الوصف باللغة العربية', key: 'title', minWidth: '250px' },
+  { title: 'الوصف باللغة الانجليزية', key: 'title_en', minWidth: '250px' },
+  { title: 'الصورة', key: 'thumb_img', minWidth: '100px' },
+  { title: '', key: 'actions', sortable: false, minWidth: '120px' },
 ];
 
 const itemsPerPagelist = ref([
@@ -141,21 +139,37 @@ interface FormFields {
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
 const form_items_types = zod.object({
-  title: zod.string({ required_error: "اختر الوصف باللغة العربية" }).min(1, { message: "اختر الوصف باللغة العربية" }),
-  title_en: zod.string({ required_error: "اختر الوصف باللغة الانجليزية" }).min(1, { message: "اختر الوصف باللغة الانجليزية" })
+  title: zod.string({ required_error: "اختر الوصف باللغة العربية" }).min(1, { message: "اختر الوصف باللغة العربية" }).max(255, { message: "يجب أن لا يتجاوز الوصف 255 حرفاً" }),
+  title_en: zod.string({ required_error: "اختر الوصف باللغة الانجليزية" }).min(1, { message: "اختر الوصف باللغة الانجليزية" }).max(255, { message: "يجب أن لا يتجاوز الوصف 255 حرفاً" })
 });
 
 const validationSchema = toTypedSchema(zod.union([
   form_items_types.merge(zod.object({
-    img: zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-          .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-         .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`),
+    img: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+          .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+         .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`),
     id: zod.number().negative()
   })),
   form_items_types.merge(zod.object({
-    img: zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-          .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-         .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
+    img: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+          .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+         .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
     id: zod.number().negative().nullish()
   })),
 ]));
@@ -183,8 +197,9 @@ const save = handleSubmit(async (values) => {
   formData.append("title", values.title.toString());
   formData.append("title_en", values.title_en.toString());
 
-  if (imgInput.value?.files?.[0] != undefined) {
-    formData.append("img", imgInput.value.files[0]);
+  if (img.value) {
+    const f = Array.isArray(img.value) ? img.value[0] : img.value;
+    if (f) formData.append("img", f);
   }
 
   SubmitLoading.value = true;
@@ -192,22 +207,18 @@ const save = handleSubmit(async (values) => {
     if (id.value > -1) {
       formData.append('_method', 'put');
       const result = await axios.post(url + "/" + id.value, formData, { headers: { 'content-type': 'multipart/form-data' } });
-      if (result.data.message) {
+      if (result.data.status === 409 || (result.data.message && typeof result.data.message === 'object')) {
+        errorDetected = true;
         Object.entries(result.data.message).forEach(([key, value]) => {
-          if (key === 'img') {
-            errorDetected = true;
-            setFieldError('img', value);
-          }
+          setFieldError(key, value);
         });
       }
     } else {
       const result = await axios.post(url, formData, { headers: { 'content-type': 'multipart/form-data' } });
-      if (result.data.message) {
+      if (result.data.status === 409 || (result.data.message && typeof result.data.message === 'object')) {
+        errorDetected = true;
         Object.entries(result.data.message).forEach(([key, value]) => {
-          if (key === 'img') {
-            errorDetected = true;
-            setFieldError('img', value);
-          }
+          setFieldError(key, value);
         });
       }
     }
@@ -227,7 +238,6 @@ const save = handleSubmit(async (values) => {
 
 function editItem(item: any) {
   item = toRaw(item);
-  console.log(item)
   disableEditButton.value = true;
   id.value = item.id;
   axios.get(url + '/' + id.value).then(response => {
@@ -268,6 +278,9 @@ function close() {
     resetForm();
     id.value = -1
     method.value = 'post'
+    imagePath.value = '';
+    imageThumbPath.value = '';
+    photo.value = '';
   });
   dialog.value = false
 }
@@ -278,9 +291,7 @@ function showImageDialog(imgVal: string, titleVal: string) {
   showImage.value = true;
 }
 
-function onSelectImage() {
-  img.value = imgInput.value.files
-}
+
 
 async function getAlbumPhotos() {
   try {

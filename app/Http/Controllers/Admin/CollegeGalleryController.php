@@ -20,7 +20,15 @@ class CollegeGalleryController extends Controller
         $query = CollegeGallery::select('id', 'college_id', 'photos')
             ->with('college:id,name')
             ->whereHas('college', function ($q) use ($search) {
-                $q->where('user_id', 1);
+                $authUser = Auth::user();
+                if ($authUser->role != 1) {
+                    if ($authUser->is_college_rep) {
+                        $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                        $q->where('id', $collegeId);
+                    } else {
+                        $q->where('user_id', $authUser->id);
+                    }
+                }
                 if (!empty($search)) {
                     $q->where('name', 'like', '%' . $search . '%');
                 }
@@ -54,7 +62,12 @@ class CollegeGalleryController extends Controller
     public function show($id)
     {
         $data = CollegeGallery::select('photos')->where('college_id', $id)->first();
-        $photoIds = explode(',', $data->photos);
+        if (!$data || empty($data->photos)) {
+            return response()->json([
+                'album_photos' => []
+            ], 200);
+        }
+        $photoIds = array_filter(explode(',', $data->photos));
         $albumPhotos = AlbumPhoto::whereIn('id', $photoIds)->get();
 
         $formattedPhotos = $albumPhotos->map(function ($photo) {

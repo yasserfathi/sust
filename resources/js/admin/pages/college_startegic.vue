@@ -1,24 +1,25 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
-      <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="كلمة عميد الكلية"
-        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close" :fullscreen="fullscreen">
+      <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="الرؤية والرسالة والأهداف"
+        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close" @resetFormFields="resetFormFields" :fullscreen="fullscreen">
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
-            <v-col cols="12" md="6" class="pt-0">
-              <v-select id="lang" name="lang" :items="languages" item-title="name" density="comfortable" item-value="id"
-                prepend-icon="mdi-abjad-arabic" v-model="lang" label="لغة المحتوى" :error-messages="errors.lang"
-                variant="underlined"></v-select>
+            <v-col cols="12" md="4" class="pt-0">
+              <v-select id="lang" name="lang" :items="languages" item-title="name" density="comfortable"
+                item-value="id" prepend-icon="mdi-abjad-arabic" v-model="lang"
+                label="لغة المحتوى" :error-messages="errors.lang" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-show="colleges && colleges.length > 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
                 item-value="id" prepend-icon="mdi-bank" v-model="college_id" label="اسماء الكليات"
-                :error-messages="errors.college_id" variant="underlined"></v-select>
+                :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
             <v-col cols="12">
-              <v-text-field type="text" label="الكلمات المفتاحية" v-model="textBox" variant="underlined"
+              <v-text-field autofocus type="text" label="الكلمات المفتاحية" v-model="textBox" variant="outlined"
                 @keyup.enter="addKeyWords" prepend-icon="mdi-tag-text-outline" v-click-outside="addKeyWords"
-                :error-messages="errors.textBox">
+                :error-messages="errors.textBox" density="comfortable" :dir="lang === 2 ? 'ltr' : 'rtl'">
                 <template v-slot:append>
                   <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
                 </template>
@@ -29,17 +30,17 @@
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-text-box-outline</v-icon> الرؤية</p>
-              <Editor v-if="isMounted" v-model="vision" />
+              <Editor v-if="renderEditor" :key="'vision_' + lang" v-model="vision" :dir="lang === 2 ? 'ltr' : 'rtl'" />
               <span style="color:#ba0061;font-size: 12px;">{{ errors.vision }}</span>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-text-box-outline</v-icon> الرسالة</p>
-              <Editor v-if="isMounted" v-model="mission" />
+              <Editor v-if="renderEditor" :key="'mission_' + lang" v-model="mission" :dir="lang === 2 ? 'ltr' : 'rtl'" />
               <span style="color:#ba0061;font-size: 12px;">{{ errors.mission }}</span>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-text-box-outline</v-icon> الاهداف</p>
-              <Editor v-if="isMounted" v-model="goals" />
+              <Editor v-if="renderEditor" :key="'goals_' + lang" v-model="goals" :dir="lang === 2 ? 'ltr' : 'rtl'" />
               <span style="color:#ba0061;font-size: 12px;">{{ errors.goals }}</span>
             </v-col>
           </v-row>
@@ -54,25 +55,17 @@
               تأكيد عملية الحذف ؟
             </v-col>
           </v-row>
-          <v-row>
-            <v-col cols="12" class="mx-1">
-              <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
-            </v-col>
-          </v-row>
-          <v-row>
-            <v-col cols="12" class="pt-0">
-              <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
-            </v-col>
-          </v-row>
+          <div class="d-flex justify-center mt-4">
+                  <v-btn color="green-darken-1" variant="elevated" @click="removeItem()" rounded="pill" class=" px-8">موافق</v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill" class="ms-4 px-8">الغاء</v-btn>
+                </div>
         </v-card-text>
       </v-card>
     </v-dialog>
   </v-container>
+  </div>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, nextTick, onBeforeMount, onMounted ,ref, toRaw } from 'vue';
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
-const Editor = defineAsyncComponent(() => import('../components/Editor.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import {  z as zod } from 'zod';
@@ -86,7 +79,7 @@ const headers = [
 ];
 
 const table = ref();
-const isMounted = ref(false)
+const renderEditor = ref(false);
 interface FormFields {
   id: number,
   college_id: number,
@@ -128,7 +121,7 @@ let languages = ref<Array<any>>([{ 'id': -1, 'name': 'اختر لغة المحت
 const fullscreen = ref(true);
 const dialog = ref(false);
 const item = ref();
-let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+let chipData = ref(['جامعة السودان للعلوم والتكنولوجيا']);
 
 const { value: college_id } = useField('college_id');
 const { value: lang } = useField('lang');
@@ -157,9 +150,7 @@ const save = handleSubmit(async (values) => {
     result = await axios.post(requestUrl, formData);
     checkFormErrorMsg(result);
   } catch (error) {
-    console.error("Failed to save data:", error);
-    // Optionally, show a generic error message to the user
-    table.value.PopulateTable('error', 'An unexpected error occurred.');
+    console.error("Save failed", error);
   } finally {
     table.value.SubmitLoading = false;
   }
@@ -178,13 +169,14 @@ function checkFormErrorMsg(result: any) {
 }
 
 function editItem(item: any) {
+  renderEditor.value = false;
   item = toRaw(item);
   table.value.disableEditButton = !table.value.disableEditButton;
   if (table.value.disableEditButton == true) {
     id.value = item.id;
     axios.get(url + '/' + item.id).then(response => {
       item = response.data.result;
-      chipData.value = item.keywords ? item.keywords.split(',') : ['جامعة السودان للعلوم و التكنولوجيا'];
+      chipData.value = item.keywords ? item.keywords.split(',') : ['جامعة السودان للعلوم والتكنولوجيا'];
       setValues({
         college_id: item.college_id,
         vision: item.vision, 
@@ -195,6 +187,11 @@ function editItem(item: any) {
       })
       table.value.disableEditButton = false
       table.value.dialog = true;
+      nextTick(() => {
+        setTimeout(() => {
+          renderEditor.value = true;
+        }, 100);
+      });
     });
   }
 }
@@ -204,7 +201,7 @@ function editItem1(item: any) {
   table.value.disableEditButton = !table.value.disableEditButton;
   if (table.value.disableEditButton == true) {
     id.value = item.id;
-    chipData.value = item.keywords ? item.keywords.split(',') : ['جامعة السودان للعلوم و التكنولوجيا'];
+    chipData.value = item.keywords ? item.keywords.split(',') : ['جامعة السودان للعلوم والتكنولوجيا'];
     setValues({
       college_id: item.college_id,
       lang: item.lang,
@@ -218,22 +215,41 @@ function editItem1(item: any) {
   }
 }
 
+function resetFormFields() {
+  renderEditor.value = false;
+  id.value = -1;
+  resetForm();
+  if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+  chipData.value = ['جامعة السودان للعلوم والتكنولوجيا'];
+  nextTick(() => {
+    setTimeout(() => {
+      renderEditor.value = true;
+    }, 100);
+  });
+}
+
 function close() {
   nextTick(() => {
     id.value = -1
-    chipData.value = ['جامعة السودان للعلوم و التكنولوجيا'];
-    imagePath.value = filePath.value = undefined;
+    chipData.value = ['جامعة السودان للعلوم والتكنولوجيا'];
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
   });
   table.value.disableEditButton = false;
   table.value.dialog = false;
+  renderEditor.value = false;
 }
 
 function addKeyWords() {
   if (textBox.value != undefined && textBox.value.trim() != '') {
-    chipData.value.push(textBox.value)
-    textBox.value = ""
+    const parts = textBox.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    parts.forEach(part => {
+      if (!chipData.value.includes(part)) {
+        chipData.value.push(part);
+      }
+    });
   }
+  textBox.value = "";
 }
 
 function removeItem() {
@@ -247,7 +263,8 @@ function removeItem() {
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 onBeforeMount(() => {
@@ -255,6 +272,6 @@ onBeforeMount(() => {
 });
 
 onMounted(() => {
-  isMounted.value = true
+  // renderEditor is handled by dialog open events now
 })
 </script>

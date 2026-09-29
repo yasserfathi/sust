@@ -20,39 +20,44 @@ class CategoryPageController extends Controller
 {
     public function index(Request $request)
     {
-        $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
+        $itemsPerPage = (int) htmlspecialchars($request->get('items') ?? 15);
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
+        }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
-        //Department collection
-        $result_departments = CategoryPage::select('id', 'category_id', 'title', 'active');
+        $query = CategoryPage::select('category_pages.id', 'category_pages.category_id', 'category_pages.title', 'category_pages.active')
+            ->with('category:id,title');
+
+        $query->whereHas('category', function ($q) {
+            $q->where('active', '1');
+        });
 
         if (!empty($search)) {
-            $result_departments->where('title', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('MATCH(category_pages.title) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
+                  ->orWhereHas('category', function ($cq) use ($search) {
+                      $cq->where('title', 'like', '%' . $search . '%');
+                  });
+            });
         }
 
-        $result_departments->with('category:id,title')->whereHas('category', function ($query) {
-            $query->where('active', '1');
-        });
+        if ($request->has('orderby') && $request->has('ascend')) {
+            $orderBy = $request->get('orderby');
+            $sortDirection = ($request->get('ascend') === 'true' || $request->get('ascend') === 'asc' || $request->get('ascend') == '1') ? 'asc' : 'desc';
 
-
-        // ===================================
-
-        //Department collection with category Name Search
-        $result_college_name = CategoryPage::select('id', 'category_id', 'title', 'active');
-
-        $result_college_name->with('category:id,title')->whereHas('category', function ($query) use ($search) {
-            if (!empty($search)) {
-                $query->where('title', 'like', '%' . $search . '%');
+            if ($orderBy === 'category.title') {
+                $query->join('categories', 'categories.id', '=', 'category_pages.category_id')
+                      ->orderBy('categories.title', $sortDirection);
+            } else {
+                $query->orderBy('category_pages.' . ltrim($orderBy, 'category_pages.'), $sortDirection);
             }
-        });
-
-        $all = $result_departments->get()->merge($result_college_name->get());
-
-        if ($request->exists('orderby') && $request->exists('ascend')) {
-            $all = $all->sortBy([[$request->get('orderby'), $request->get('ascend')]]);
+        } else {
+            $query->orderBy('category_pages.id', 'desc');
         }
 
-        return response()->json(['result' => $all->paginate((int)$itemsPerPage)], 200);
+        return response()->json(['result' => $query->paginate($itemsPerPage)], 200);
     }
 
     public function show($id)

@@ -1,27 +1,26 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="كلمة عميد الكلية"
         @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close"
         :fullscreen="fullscreen" transition="dialog-bottom-transition">
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
-            <v-col cols="12" md="3" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 3 : 4" class="pt-0" v-show="colleges && colleges.length > 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="college_id"
-                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" label="اسماء الكليات" :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="3" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 3 : 4" class="pt-0">
               <v-select id="lang" name="lang" :items="languages" item-title="name" density="comfortable"
                 item-value="id" prepend-icon="mdi-abjad-arabic" v-model="lang"
-                label="لغة المحتوى" :error-messages="errors.lang" variant="underlined"></v-select>
+                label="لغة المحتوى" :error-messages="errors.lang" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" :md="imagePath != undefined ? 2 : 3" class="pt-0">
-              <v-file-input type="file" id="img" name="img" ref="imgInput" show-size chips accept='.jpg,.jpeg,.png' @change="onSelectImage"
-                label="اختر ملف الصورة" variant="underlined" :error-messages="errors.img"></v-file-input>
+            <v-col cols="12" :md="imagePath != '' ? 2 : 3" class="pt-0">
+              <v-file-input type="file" id="img" name="img" v-model="img" show-size chips accept='.jpg,.jpeg,.png' label="اختر ملف الصورة" variant="outlined" :error-messages="errors.img" density="comfortable"></v-file-input>
             </v-col>
-            <v-col v-if="imagePath != undefined" cols="12" md="1">
-                <v-img :src="BASE_URL+ imageThumbPath" :lazy-src="BASE_URL+ imageThumbPath" :height="48" style="cursor: pointer" @click="showModal(BASE_URL+ imagePath)">
+            <v-col v-if="imagePath != ''" cols="12" md="1">
+                <v-img :src="BASE_URL + '/' + imageThumbPath" :lazy-src="BASE_URL + '/' + imageThumbPath" :height="48" style="cursor: pointer" @click="showModal(BASE_URL + '/' + imagePath)">
                   <template v-slot:placeholder>
                     <v-row class="fill-height ma-0" align="center" justify="center">
                       <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
@@ -36,17 +35,16 @@
                 </v-card>
               </v-dialog>
             </v-col>
-            <v-col cols="12" :md="filePath != undefined ? 2 : 3" class="pt-0">
-              <v-file-input type="file" id="file" name="file" ref="fileInput" show-size @input="onSelectFile" chips accept='.dox,.docx,.pdf'
-                label="اختر الملف  المرفق" variant="underlined" :error-messages="errors.file"></v-file-input>
+            <v-col cols="12" :md="filePath != '' ? 2 : 3" class="pt-0">
+              <v-file-input type="file" id="file" name="file" v-model="file" show-size chips accept='.dox,.docx,.pdf' label="اختر الملف المرفق" variant="outlined" :error-messages="errors.file" density="comfortable"></v-file-input>
             </v-col>
-            <v-col v-if="filePath != undefined" cols="12" md="1" class="pt-7">
+            <v-col v-if="filePath != ''" cols="12" md="1" class="pt-7">
               <a :href="BASE_URL+ filePath" class="text-subtitle-2">الملف الحالي<v-icon icon="mdi-image"></v-icon></a>
             </v-col>
             <v-col cols="12">
-              <v-text-field type="text" label="الكلمات المفتاحية" v-model="textBox" variant="underlined"
+              <v-text-field autofocus type="text" label="الكلمات المفتاحية" v-model="textBox" variant="outlined"
                 @keyup.enter="addKeyWords" prepend-icon="mdi-tag-text-outline" v-click-outside="addKeyWords"
-                :error-messages="errors.textBox">
+                :error-messages="errors.textBox" density="comfortable">
                 <template v-slot:append>
                   <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
                 </template>
@@ -56,8 +54,8 @@
                     @click="item = chipText, dialog = true">mdi-trash-can-outline</v-icon></v-chip></span>
             </v-col>
             <v-col cols="12" class="mt-1">
-              <v-text-field name="detail_portion" variant="underlined" label="جزء من المحتوى" v-model="detail_portion"
-                :error-messages="errors.detail_portion" prepend-icon="mdi-text-box-outline"></v-text-field>
+              <v-text-field name="detail_portion" variant="outlined" label="جزء من المحتوى" v-model="detail_portion"
+                :error-messages="errors.detail_portion" prepend-icon="mdi-text-box-outline" density="comfortable"></v-text-field>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-text-box-outline</v-icon> المحتوى</p>
@@ -76,29 +74,20 @@
             تأكيد عملية الحذف ؟
           </v-col>
         </v-row>
-        <v-row>
-          <v-col cols="12" class="mx-1">
-            <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12" class="pt-0">
-            <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
-          </v-col>
-        </v-row>
+        <div class="d-flex justify-center mt-4">
+                  <v-btn color="green-darken-1" variant="elevated" @click="removeItem()" rounded="pill" class=" px-8">موافق</v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill" class="ms-4 px-8">الغاء</v-btn>
+                </div>
       </v-card-text>
     </v-card>
   </v-dialog>
   </v-container>
+  </div>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
-const Editor = defineAsyncComponent(() => import('../components/Editor.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import { z as zod} from 'zod';
-import { nextTick, onBeforeMount, ref } from 'vue';
 import axios from 'axios';
 
 const url = route('page.index','dean_word')
@@ -120,7 +109,7 @@ interface FormFields {
   detail: string;
 }
 
-const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const BASE_URL = window.location.origin + '/';
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 const ACCEPTED_FILE_TYPES = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf"];
 
@@ -128,12 +117,24 @@ const validationSchema = toTypedSchema(
   zod.object({
     lang: zod.number({ required_error: "اختر لغة المحتوى" }).gte(0,{ message: 'اختر لغة المحتوى' }),
     college_id: zod.number({ required_error: "اختر اسم الكلية" }),
-    file: zod.any().refine((files) => files?.length == 1, "اختر الملف المرفق")
-          .refine((files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .doc, .docx, .pdf")
-          .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
-          img: zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-          .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-         .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
+    file: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الملف المرفق")
+          .refine((files) => (!files || files.length === 0) ? true : ACCEPTED_FILE_TYPES.includes((Array.isArray(files) ? files[0] : files)?.type), "يتم دعم  فقط .doc, .docx, .pdf")
+          .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
+          img: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+          .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+         .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
     detail_portion: zod.string({ required_error: "ادخل جزء من المحتوى" }).trim().min(1, { message: 'ادخل جزء من المحتوى' }),
     detail: zod.string({ required_error: "ادخل المحتوى" }).trim().min(1, { message: 'ادخل المحتوى' }),
     textBox: zod.string().nullish().transform((value, ctx): string => {
@@ -168,7 +169,7 @@ const dialog = ref(false);
 const photo = ref();
 const showImage = ref(false);
 const item = ref();
-let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+let chipData = ref(['جامعة السودان للعلوم والتكنولوجيا']);
 
 const { value: college_id } = useField('college_id');
 const { value: lang } = useField('lang');
@@ -193,12 +194,14 @@ const save = handleSubmit(async(values) => {
   formData.append("keywords", chipData.value.toString())
   formData.append("detail_portion", values.detail_portion)
   formData.append("detail", values.detail)
-  if(imgInput.value.files[0] != undefined){
-    formData.append("img", imgInput.value.files[0])
+  if (img.value) {
+    const f_img = Array.isArray(img.value) ? img.value[0] : img.value;
+    if (f_img) formData.append("img", f_img);
   }
 
-  if(fileInput.value.files[0] != undefined){
-    formData.append("file", fileInput.value.files[0])
+  if (file.value) {
+    const f = Array.isArray(file.value) ? file.value[0] : file.value;
+    if (f) formData.append("file", f);
   }
 
   let temp: Array<any> = [];
@@ -209,7 +212,7 @@ const save = handleSubmit(async(values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status,temp);
-    })
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); })
   }
   else{
     formData.append('_method', 'put');
@@ -218,9 +221,9 @@ const save = handleSubmit(async(values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status,temp);
-    });
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); });
   }
-  table.value.SubmitLoading = false;
+  
   // close();
 });
 
@@ -249,27 +252,32 @@ function editItem(item: any) {
 function close() {
   nextTick(() => {
     id.value = -1
-    chipData.value = ['جامعة السودان للعلوم و التكنولوجيا'];
-    imagePath.value = filePath.value = undefined;
+    chipData.value = ['جامعة السودان للعلوم والتكنولوجيا'];
+    imagePath.value = filePath.value = '';
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    imagePath.value = '';
+    imageThumbPath.value = '';
+    photo.value = '';
   });
   table.value.disableEditButton = false;
   table.value.dialog = false;
 }
 
-function onSelectImage() {
-  img.value = imgInput.value.files
-}
 
-function onSelectFile() {
-  file.value = fileInput.value.files
-}
+
+
 
 function addKeyWords() {
   if (textBox.value != undefined && textBox.value.trim() != '') {
-    chipData.value.push(textBox.value)
-    textBox.value = ""
+    const parts = textBox.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    parts.forEach(part => {
+      if (!chipData.value.includes(part)) {
+        chipData.value.push(part);
+      }
+    });
   }
+  textBox.value = "";
 }
 
 function removeItem() {
@@ -283,7 +291,8 @@ function removeItem() {
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 function showModal(photoPath: any) {

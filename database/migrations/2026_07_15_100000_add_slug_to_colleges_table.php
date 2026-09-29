@@ -13,9 +13,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('colleges', function (Blueprint $table) {
-            $table->string('slug')->nullable()->after('name_en');
-        });
+        if (!Schema::hasColumn('colleges', 'slug')) {
+            Schema::table('colleges', function (Blueprint $table) {
+                $table->string('slug')->nullable()->after('name_en');
+            });
+        }
 
         // Populate slug for existing colleges
         $colleges = DB::table('colleges')->get();

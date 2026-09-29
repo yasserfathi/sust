@@ -65,7 +65,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
 
 const paymentsHistory = ref([
   { id: 'REC-2025-00124', date: '2025-10-01', amount: '50,000', method: 'تطبيق بنكك' },

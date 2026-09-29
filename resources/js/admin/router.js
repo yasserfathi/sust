@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './store/index';
 
 const DefaultLayout = () => import('./layouts/Default.vue');
-const APP_NAME = 'لوحة تحكم موقع جامعة السودان للعلوم  والتكنولوجيا';
+const APP_NAME = 'لوحة تحكم موقع جامعة السودان للعلوم والتكنولوجيا';
 
 const routes = [
   {
@@ -132,6 +132,16 @@ const routes = [
     }]
   },
   {
+    path: '/profile',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'profile',
+      component: () => import('./pages/profile.vue'),
+      meta: { requiresAuth: true, title: 'الملف الشخصي' }
+    }]
+  },
+  {
     path: '/department',
     component: DefaultLayout,
     children: [{
@@ -139,6 +149,36 @@ const routes = [
       name: 'department',
       component: () => import('./pages/department.vue'),
       meta: { requiresAuth: true, title: 'الأقسام' }
+    }]
+  },
+  {
+    path: '/section',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'section',
+      component: () => import('./pages/section.vue'),
+      meta: { requiresAuth: true, title: 'الشعب' }
+    }]
+  },
+  {
+    path: '/school',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'school',
+      component: () => import('./pages/school.vue'),
+      meta: { requiresAuth: true, title: 'المدارس' }
+    }]
+  },
+  {
+    path: '/administrative_positions',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'administrative_positions',
+      component: () => import('./pages/administrative_positions.vue'),
+      meta: { requiresAuth: true, title: 'المناصب الإدارية' }
     }]
   },
   {
@@ -192,6 +232,36 @@ const routes = [
     }]
   },
   {
+    path: '/news_migration',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'news_migration',
+      component: () => import('./pages/news_migration.vue'),
+      meta: { requiresAuth: true, title: 'نقل الأخبار من الموقع السابق' }
+    }]
+  },
+  {
+    path: '/workshops',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'college_workshops',
+      component: () => import('./pages/college_workshops.vue'),
+      meta: { requiresAuth: true, title: 'الورش والمؤتمرات' }
+    }]
+  },
+  {
+    path: '/workshops_en',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'college_workshops_en',
+      component: () => import('./pages/college_workshops_en.vue'),
+      meta: { requiresAuth: true, title: 'Workshops & Conferences' }
+    }]
+  },
+  {
     path: '/staff_academic/',
     component: DefaultLayout,
     children: [
@@ -209,6 +279,9 @@ const routes = [
       { path: 'training_courses', name: 'training_courses', component: () => import('./pages/training_courses.vue'), meta: { requiresAuth: true, title: 'دورات التدريب' } },
       { path: 'google_scholar', name: 'google_scholar', component: () => import('./pages/google_scholar.vue'), meta: { requiresAuth: true, title: 'Google Scholar' } },
       { path: 'articles', name: 'articles', component: () => import('./pages/articles.vue'), meta: { requiresAuth: true, title: 'المقالات' } },
+      { path: 'workshops', name: 'workshops', component: () => import('./pages/workshops.vue'), meta: { requiresAuth: true, title: 'الورش والمؤتمرات والسمنارات' } },
+      { path: 'workshpos', name: 'workshpos', component: () => import('./pages/workshops.vue'), meta: { requiresAuth: true, title: 'الورش والمؤتمرات والسمنارات' } },
+      { path: 'certificates', name: 'certificates', component: () => import('./pages/certificates.vue'), meta: { requiresAuth: true, title: 'الجوائز وشهادات التقدير' } },
       { path: 'staff_resume', name: 'staff_resume', component: () => import('./pages/staff_resume.vue'), meta: { requiresAuth: true, title: 'سيرة الموظف' } },
       { path: 'staff_album_photos', name: 'staff_album_photos', component: () => import('./pages/staff_album_photos.vue'), meta: { requiresAuth: true, title: 'ألبوم صور الموظف' } },
     ]
@@ -264,13 +337,23 @@ const routes = [
     }],
   },
   {
-    path: '/university_official_ranks',
+    path: '/head_administrative_positions',
     component: DefaultLayout,
     children: [{
       path: '',
-      name: 'university_official_ranks',
-      component: () => import('./pages/university_official_ranks.vue'),
+      name: 'head_administrative_positions',
+      component: () => import('./pages/head_administrative_positions.vue'),
       meta: { requiresAuth: true, title: 'الإدارة العليا للجامعة' }
+    }],
+  },
+  {
+    path: '/administrative_positions',
+    component: DefaultLayout,
+    children: [{
+      path: '',
+      name: 'administrative_positions',
+      component: () => import('./pages/administrative_positions.vue'),
+      meta: { requiresAuth: true, title: 'المناصب الإدارية' }
     }],
   },
   {
@@ -289,7 +372,22 @@ const router = createRouter({
   }
 });
 
-router.beforeEach(async (to) => {
+router.beforeEach(async (to, from) => {
+  // Check for new version on navigation (if __APP_VERSION__ is defined by Vite)
+  if (from && to.name !== from.name && typeof __APP_VERSION__ !== 'undefined') {
+    try {
+      const response = await fetch('/version.json?t=' + Date.now(), { cache: 'no-store' });
+      const data = await response.json();
+      if (data.version && data.version !== __APP_VERSION__) {
+        console.log('New version detected! Reloading...');
+        window.location.reload(true);
+        return;
+      }
+    } catch (e) {
+      // Ignore fetch errors to not block navigation
+    }
+  }
+
   const authStore = useAuthStore();
 
   document.title = to.meta.title
@@ -304,12 +402,23 @@ router.beforeEach(async (to) => {
     }
   }
 
+  const needsPasswordChange = authStore.user?.force_password_change;
+
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     localStorage.setItem('redirectUrl', to.fullPath);
     return { name: 'Login' };
   }
 
+  if (to.meta.requiresAuth && authStore.isAuthenticated && needsPasswordChange) {
+    authStore.clearAuth();
+    return { name: 'Login' };
+  }
+
   if (to.name === 'Login' && authStore.isAuthenticated) {
+    if (needsPasswordChange) {
+      authStore.clearAuth();
+      return true;
+    }
     const redirectUrl = localStorage.getItem('redirectUrl');
     localStorage.removeItem('redirectUrl');
 
@@ -323,6 +432,23 @@ router.beforeEach(async (to) => {
   }
 
   return true;
+});
+
+// Automatic Chunk Load Error Recovery (prevents blank pages after new builds without requiring manual Ctrl+F5)
+router.onError((error, to) => {
+  const isChunkLoadError = 
+    error?.message?.includes('Failed to fetch dynamically imported module') ||
+    error?.message?.includes('Importing a module script failed') ||
+    error?.name === 'ChunkLoadError' ||
+    error?.message?.includes('404');
+
+  if (isChunkLoadError && to?.fullPath) {
+    const key = `chunk_reload_${to.fullPath}`;
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, 'true');
+      window.location.reload();
+    }
+  }
 });
 
 export default router;

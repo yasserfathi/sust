@@ -15,15 +15,15 @@
                             {{ $user->name }}
                         </h2>
                         <h1 class="hero-name-large" data-aos="fade-up" data-aos-delay="300">
-                            {{ $job_titles[$user->staff_latest?->job_title ?? ''] ?? ($user->staff_latest?->job_title ?? '') }}
+                            {{ $grades[$user->staff_latest?->grade ?? ''] ?? ($user->staff_latest?->grade ?? '') }}
                         </h1>
                         <p class="hero-role" data-aos="fade-up" data-aos-delay="400">
                             كلية {{ $user->staff_latest?->department?->college?->name ?? '' }} - قسم {{ $user->staff_latest?->department?->name ?? '' }}
                         </p>
                         <div class="d-flex gap-3 hero-buttons" data-aos="fade-up" data-aos-delay="500">
-                            <a href="#" class="btn btn-primary rounded-pill">تواصل معي</a>
+                            <a href="mailto:{{ $user->email }}" class="btn btn-primary rounded-pill">تواصل معي</a>
                             @if($resume && $resume->file)
-                            <a href="{{ asset('storage/' . $resume->file) }}" target="_blank" class="btn btn-outline-primary rounded-pill">السيرة الذاتية</a>
+                            <a href="{{ versioned_asset(ltrim(preg_replace('#^storage/#', '', $resume->file), '/')) }}" target="_blank" class="btn btn-outline-primary rounded-pill">السيرة الذاتية</a>
                             @else
                             <a href="#" class="btn btn-outline-primary rounded-pill">السيرة الذاتية (غير متوفر)</a>
                             @endif
@@ -33,7 +33,7 @@
                     <!-- Image Column (Left in RTL) -->
                     <div class="col-lg-5 order-1 order-lg-2 text-center mb-4 mb-lg-0">
                         <div class="hero-profile-frame" data-aos="zoom-in" data-aos-duration="1000">
-                            <img src="{{ asset($user->img) }}" alt="{{ $user->name }}" class="img-fluid">
+                            <img src="{{ versioned_asset($user->img) }}" alt="{{ $user->name }}" class="img-fluid">
                         </div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                             @if ($user->linkedin)
                                 <a href="{{ $user->linkedin }}" class="text-secondary fs-5"><i class="icofont-linkedin"></i></a>
                             @endif
-                            <a href="#" class="text-secondary fs-5"><i class="icofont-google-plus"></i></a>
+                            <a href="{{ route('staff.google_scholar_ar', $user->slug) }}" class="text-secondary fs-5" title="Google Scholar"><i class="icofont-graduate"></i></a>
                         </div>
                     </div>
                 </div>
@@ -78,10 +78,10 @@
                     @forelse ($user->staff_latest?->scientific_papers ?? [] as $paper)
                         <div class="pub-card d-flex gap-3 mb-4 align-items-start">
                             @if ($paper->thumb_img)
-                                <img src="{{ asset($paper->thumb_img) }}" alt="Publication" class="rounded-3 object-fit-cover"
+                                <img src="{{ versioned_asset($paper->thumb_img) }}" alt="Publication" class="rounded-3 object-fit-cover"
                                     width="120" height="90">
                             @else
-                                <img src="{{ asset('img/grid/grid_1.jpg') }}" alt="Publication" class="rounded-3 object-fit-cover"
+                                <img src="{{ versioned_asset('img/grid/grid_1.jpg') }}" alt="Publication" class="rounded-3 object-fit-cover"
                                     width="120" height="90">
                             @endif
                             <div>
@@ -98,7 +98,7 @@
                     @endforelse
 
                 </div>
-                
+
                 <!-- Academic Resume Download Box -->
                 @if($resume && ($resume->file || $resume->file_en))
                 <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
@@ -108,14 +108,14 @@
                     <div class="row text-center mt-3">
                         @if($resume->file)
                         <div class="col-md-6 mb-3">
-                             <a href="{{ asset('storage/' . $resume->file) }}" target="_blank" class="btn btn-primary rounded-pill px-4 py-2 w-100">
+                             <a href="{{ versioned_asset('storage/' . $resume->file) }}" target="_blank" class="btn btn-primary rounded-pill px-4 py-2 w-100">
                                <i class="icofont-download me-2"></i> تحميل السيرة الذاتية (عربي)
                              </a>
                         </div>
                         @endif
                         @if($resume->file_en)
                         <div class="col-md-6 mb-3">
-                             <a href="{{ asset('storage/' . $resume->file_en) }}" target="_blank" class="btn btn-outline-primary rounded-pill px-4 py-2 w-100">
+                             <a href="{{ versioned_asset('storage/' . $resume->file_en) }}" target="_blank" class="btn btn-outline-primary rounded-pill px-4 py-2 w-100">
                                <i class="icofont-download me-2"></i> تحميل السيرة الذاتية (انجليزي)
                              </a>
                         </div>
@@ -123,7 +123,7 @@
                     </div>
                 </div>
                 @endif
-                
+
             </div>
         </div>
     </div>

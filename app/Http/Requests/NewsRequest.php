@@ -32,6 +32,8 @@ class NewsRequest extends FormRequest
             'college_id' => 'bail|required|string',
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('news')->where(function ($query){
                     $query->where('title', $this->title)
                     ->where('lang',1)->whereNull('deleted_at');

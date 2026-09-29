@@ -64,22 +64,37 @@ class CategoryPageUserController extends Controller
     public function store(CategoryPageUserRequest $request)
     {
         $pages = explode(',', $request->pages);
+        
+        $existingRecords = CategoryPageUser::withTrashed()
+            ->whereIn('category_page_id', $pages)
+            ->where('user_id', $request->user_id)
+            ->get()
+            ->keyBy('category_page_id');
 
-        for ($i = 0; $i < count($pages); $i++) {
+        $inserts = [];
+        $authId = Auth::user()->id;
+        $now = \Carbon\Carbon::now();
 
-            $record = CategoryPageUser::withTrashed()->where('category_page_id', $pages[$i])->where('user_id', $request->user_id)->first(); // check if trashed
+        foreach ($pages as $pageId) {
+            $record = $existingRecords->get($pageId);
 
             if ($record) {
                 if ($record->trashed()) {
                     $record->restore();
                 }
             } else {
-                CategoryPageUser::create([
-                    'category_page_id' => $pages[$i],
+                $inserts[] = [
+                    'category_page_id' => $pageId,
                     'user_id' => $request->user_id,
-                    'auth_id' => Auth::user()->id,
-                ]);
+                    'auth_id' => $authId,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
+        }
+
+        if (!empty($inserts)) {
+            CategoryPageUser::insert($inserts);
         }
 
         return response()->json(['message' => 'created', 'status' => 201]);
@@ -89,25 +104,54 @@ class CategoryPageUserController extends Controller
     public function update(CategoryPageUserRequest $request)
     {
         $pages = explode(',', $request->pages);
+        $pageIdsToProcess = [];
+        $pageIdsToDelete = [];
 
-        for ($i = 0; $i < count($pages); $i++) {
+        foreach ($pages as $page) {
+            if ($page > 0) {
+                $pageIdsToProcess[] = $page;
+            } else {
+                $pageIdsToDelete[] = $page * -1;
+            }
+        }
 
-            if ($pages[$i] > 0) { //insert-restore
+        if (!empty($pageIdsToDelete)) {
+            CategoryPageUser::where('user_id', $request->user_id)
+                ->whereIn('category_page_id', $pageIdsToDelete)
+                ->delete();
+        }
 
-                $record = CategoryPageUser::withTrashed()->where('category_page_id', $pages[$i])->where('user_id', $request->user_id)->first(); // check if trashed
+        if (!empty($pageIdsToProcess)) {
+            $existingRecords = CategoryPageUser::withTrashed()
+                ->whereIn('category_page_id', $pageIdsToProcess)
+                ->where('user_id', $request->user_id)
+                ->get()
+                ->keyBy('category_page_id');
+
+            $inserts = [];
+            $authId = Auth::user()->id;
+            $now = \Carbon\Carbon::now();
+
+            foreach ($pageIdsToProcess as $pageId) {
+                $record = $existingRecords->get($pageId);
+
                 if ($record) {
                     if ($record->trashed()) {
                         $record->restore();
                     }
                 } else {
-                    CategoryPageUser::create([
-                        'category_page_id' => $pages[$i],
+                    $inserts[] = [
+                        'category_page_id' => $pageId,
                         'user_id' => $request->user_id,
-                        'auth_id' => Auth::user()->id,
-                    ]);
+                        'auth_id' => $authId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
                 }
-            } else { //delete
-                CategoryPageUser::where('user_id', $request->user_id)->where('category_page_id', $pages[$i] * -1)->delete();
+            }
+
+            if (!empty($inserts)) {
+                CategoryPageUser::insert($inserts);
             }
         }
 

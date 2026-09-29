@@ -18,8 +18,8 @@ class StaffResumeController extends Controller
     {
         $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
 
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
 
         $search = htmlspecialchars($request->get('search') ?? '');
@@ -54,7 +54,7 @@ class StaffResumeController extends Controller
                     $query->select('id', 'name');
                 },
                 'user.staff_latest' => function ($query) {
-                    $query->select('id', 'user_id', 'department_id');
+                    $query->select('staff_employs.id', 'staff_employs.user_id', 'staff_employs.department_id');
                 },
                 'user.staff_latest.department' => function ($query) {
                     $query->select('id', 'college_id', 'name');
@@ -64,12 +64,12 @@ class StaffResumeController extends Controller
                 },
             ])
             ->whereHas('user.staff_latest.department')
-            ->where('id', DB::raw('"' . $id . '"'))->first();
+            ->where('id', $id)->first();
 
         /* $edit_data = Staff_resume::select('file', 'file_en', 'user_id')
             ->with([
                 'user:id,name',
-                'user.staff_latest:id,user_id,department_id',
+                'user.staff_latest:staff_employs.id,staff_employs.user_id,staff_employs.department_id',
                 'user.staff_latest.department:id,college_id,name',
                 'user.staff_latest.department.college:id,name'
             ])->get(); */
@@ -80,7 +80,7 @@ class StaffResumeController extends Controller
     {
         $validator = $request->validated();
         $file_path = $file_path_en = '';
-        $db_files = Staff_resume::select('file', 'file_en')->where('user_id', '=', DB::raw('"' . $request->user_id . '"'))->first();
+        $db_files = Staff_resume::select('file', 'file_en')->where('user_id', '=', $request->user_id)->first();
 
         if ($db_files != null) {
             $file_path = $db_files->file;
@@ -93,10 +93,11 @@ class StaffResumeController extends Controller
                 $rand = hexdec(uniqid());
                 $filename = $rand . '.' . $file->getClientOriginalExtension();
                 if ($file_path != '') {
-                    unlink('resumes/' . $file_path);
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file_path);
                 }
                 $file_path = $file->storeAs('resumes', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -106,10 +107,11 @@ class StaffResumeController extends Controller
                 $rand = hexdec(uniqid());
                 $filename = $rand . '.' . $file_en->getClientOriginalExtension();
                 if ($file_path_en != '') {
-                    unlink('resumes/' . $file_path_en);
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file_path_en);
                 }
                 $file_path_en = $file_en->storeAs('resumes', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -133,11 +135,12 @@ class StaffResumeController extends Controller
                 $file = $request->file('file');
                 $rand = hexdec(uniqid());
                 $filename = $rand . '.' . $file->getClientOriginalExtension();
-                if (Str::length($file_path) > 0 && file_exists(public_path($file_path))) {
-                    unlink($file_path);
+                if (Str::length($file_path) > 0) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file_path);
                 }
                 $file_path = $file->storeAs('resumes', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -147,11 +150,12 @@ class StaffResumeController extends Controller
                 $file_en = $request->file('file_en');
                 $rand = hexdec(uniqid());
                 $filename = $rand . '.' . $file_en->getClientOriginalExtension();
-                if (Str::length($file_path_en) > 0 && file_exists(public_path($file_path_en))) {
-                    unlink($file_path_en);
+                if (Str::length($file_path_en) > 0) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file_path_en);
                 }
                 $file_path_en = $file_en->storeAs('resumes', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -172,12 +176,12 @@ class StaffResumeController extends Controller
     {
         $data = Staff_resume::findOrFail($staff_resume->id);
 
-        if (Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
-            unlink($data->file);
+        if (Str::length($data->file) > 0) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($data->file);
         }
 
-        if (Str::length($data->file_en) > 0 && file_exists(public_path($data->file_en))) {
-            unlink($data->file_en);
+        if (Str::length($data->file_en) > 0) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($data->file_en);
         }
 
         $data->delete();

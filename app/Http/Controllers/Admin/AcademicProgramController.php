@@ -17,22 +17,34 @@ class AcademicProgramController extends Controller
     {
         $itemsPerPage = $request->get('items', 15);
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
-        $query = AcademicProgram::select('id', 'department_id', 'program_type', 'program_name', 'program_name_en', 'credit_hours', 'active');
+        $query = AcademicProgram::select('id', 'department_id', 'program_type', 'program_name', 'program_name_en', 'NOOFYEARSNO', 'NOOFSEM', 'active');
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('program_name', 'like', '%' . $search . '%')
-                    ->orWhere('program_name_en', 'like', '%' . $search . '%');
+                $q->whereRaw('MATCH(program_name, program_name_en) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))]);
             });
         }
 
-        $query->with(['department:id,name,college_id', 'department.college:id,name']);
+        $query->with(['department:id,name,college_id,school_id', 'department.college:id,name', 'department.school:id,name']);
+
+        $authUser = \Illuminate\Support\Facades\Auth::user();
+        if ($authUser && $authUser->role != 1 && $authUser->is_college_rep) {
+            $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+            if ($collegeId) {
+                $query->whereHas('department', function ($q) use ($collegeId) {
+                    $q->where('college_id', $collegeId);
+                });
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        }
 
         if ($request->exists('orderby') && $request->exists('ascend')) {
-            $query->orderBy($request->get('orderby'), $request->get('ascend') ? 'asc' : 'desc');
+            $query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
         } else {
-            $query->orderBy('id', 'desc');
+            $query->orderByDesc('id');
         }
 
         $all = $query->paginate((int) $itemsPerPage);
@@ -42,7 +54,7 @@ class AcademicProgramController extends Controller
 
     public function show($id)
     {
-        $data = AcademicProgram::with(['department:id,name,college_id', 'department.college:id,name', 'courses'])->find($id);
+        $data = AcademicProgram::with(['department:id,name,college_id,school_id', 'department.college:id,name', 'department.school:id,name', 'courses'])->find($id);
 
         if (!$data) {
             return response()->json(['message' => 'Not found'], 404);
@@ -67,6 +79,7 @@ class AcademicProgramController extends Controller
                 $filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
                 $file_path = $file->storeAs('files', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -75,7 +88,8 @@ class AcademicProgramController extends Controller
             ['user_id' => Auth::user()->id],
             ['active' => $active],
             ['file' => $file_path],
-            ['credit_hours' => $request->credit_hours ?? '']
+            ['NOOFYEARSNO' => $request->NOOFYEARSNO ?? null],
+            ['NOOFSEM' => $request->NOOFSEM ?? null]
         );
 
         AcademicProgram::create($data);
@@ -94,10 +108,11 @@ class AcademicProgramController extends Controller
                     $filename = $rand . '.' . $file->getClientOriginalExtension();
                     $file_path = $file->storeAs('files', $filename, 'public');
                     if (Str::length($record->file) > 0 && file_exists(public_path($record->file))) {
-                        unlink($record->file);
+                        unlink(public_path($record->file));
                     }
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
         $active = 0;
@@ -109,7 +124,8 @@ class AcademicProgramController extends Controller
         $record->department_id = $request->department_id;
 
         $record->program_type = $request->program_type;
-        $record->credit_hours = $request->credit_hours ?? '';
+        $record->NOOFYEARSNO = $request->NOOFYEARSNO ?? null;
+        $record->NOOFSEM = $request->NOOFSEM ?? null;
         $record->active = $active;
         $record->file = $file_path;
         $record->user_id = Auth::user()->id;
@@ -126,6 +142,9 @@ class AcademicProgramController extends Controller
         $data = AcademicProgram::find($id);
         if (!$data) {
             return response()->json(['message' => 'Not found'], 404);
+        }
+        if (Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
+            unlink(public_path($data->file));
         }
         $data->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);

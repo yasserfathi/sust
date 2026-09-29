@@ -1,6 +1,6 @@
 <x-mail::message>
     <x-mail::header :url="config('app.url')">
-        <img src="{{ asset('images/gallery/sust-logo.png') }}" alt="شعار جامعة السودان للعلوم والتكنولوجيا"
+        <img src="{{ versioned_asset('images/gallery/sust-logo.png') }}" alt="شعار جامعة السودان للعلوم والتكنولوجيا"
             style="max-width: 180px; margin-bottom: 10px;">
     </x-mail::header>
 

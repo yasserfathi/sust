@@ -3,18 +3,13 @@ import { createPinia } from 'pinia';
 import App from './App.vue';
 import router from './router';
 
-// Vuetify Setup
 import 'vuetify/styles';
 import '../../css/app.scss';
 import { createVuetify } from 'vuetify';
-import * as components from 'vuetify/components';
-import * as directives from 'vuetify/directives';
 import { ar } from 'vuetify/locale';
 import { aliases, mdi } from 'vuetify/iconsets/mdi';
 
 const vuetify = createVuetify({
-  components,
-  directives,
   locale: {
     locale: 'ar',
     fallback: 'ar',

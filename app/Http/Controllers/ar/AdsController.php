@@ -35,7 +35,9 @@ class AdsController extends Controller
 		{
 			return view('news_archive',compact("data"));
 		}
-		else abort(404);
+		else {
+            return view('news_archive',compact("data"));
+        }
 	}
 	public function details(Request $request,$title)
 	{
@@ -44,9 +46,10 @@ class AdsController extends Controller
         $data['colleges'] = College::select('name')->where('active',1)->where('college_type', 'college')->get();
         $data['deanships'] = College::select('name')->where('active',1)->where('college_type', 'deanship')->get();
         $data['centers'] = College::select('name')->where('active',1)->where('college_type', 'center')->get();
-        $data['news'] = News::select('title','news_date','detail','photos','file')->where([['lang',1],['title','=',$title]])->first();
-		$list_photos = AlbumPhoto::select('id', 'img as photo', 'title')->whereIn('id', explode(',', $data['news']->photos))->get();
-        $data['news']->photos = $list_photos;
+        $data['news'] = News::with('photos:id,img as photo,title')
+            ->select('id','title','news_date','detail','file')
+            ->where([['lang',1],['title','=',$title]])
+            ->first();
 		if($data['news']->count() != 0)
 		{
 			$data['recent_news'] = News::select( 'title')

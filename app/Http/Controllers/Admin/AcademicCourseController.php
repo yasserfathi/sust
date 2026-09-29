@@ -14,13 +14,13 @@ class AcademicCourseController extends Controller
     {
         $itemsPerPage = $request->get('items', 15);
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
         $query = AcademicCourse::with('program:id,program_name,program_name_en');
 
         if (!empty($search)) {
             $query->where(function ($q) use ($search) {
-                $q->where('course_title', 'like', '%' . $search . '%')
-                    ->orWhere('course_code', 'like', '%' . $search . '%');
+                $q->whereRaw('MATCH(course_title, course_code) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))]);
             });
         }
 
@@ -29,7 +29,7 @@ class AcademicCourseController extends Controller
         }
 
         if ($request->exists('orderby') && $request->exists('ascend')) {
-            $query->orderBy($request->get('orderby'), $request->get('ascend') ? 'asc' : 'desc');
+            $query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
         } else {
             $query->orderBy('course_id', 'desc');
         }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\College;
+use App\Models\School;
 
 use App\Models\StaffEmploy;
 use Illuminate\Database\Eloquent\Model;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 class Department extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable, HasFactory, SoftDeletes;
-    protected $fillable = ['user_id', 'college_id', 'name', 'name_en', 'keywords', 'description', 'keywords_ar', 'description_ar', 'active'];
+    protected $fillable = ['user_id', 'college_id', 'school_id', 'name', 'name_en', 'keywords', 'description', 'keywords_ar', 'description_ar', 'active'];
 
     protected $hidden = [
         'college_id',
@@ -27,9 +28,19 @@ class Department extends Model implements Auditable
         return $this->belongsTo(College::class);
     }
 
+    public function school()
+    {
+        return $this->belongsTo(School::class);
+    }
+
     public function staff()
     {
         return $this->hasMany(StaffEmploy::class);
+    }
+
+    public function academicPrograms()
+    {
+        return $this->hasMany(AcademicProgram::class);
     }
 
     protected $casts = [

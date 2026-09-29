@@ -31,6 +31,8 @@ class CategoryPageRequest extends FormRequest
         return [
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('category_pages')->where(function ($query) {
                     $query->where('title', $this->title)
                         ->where('category_id', $this->category_id)

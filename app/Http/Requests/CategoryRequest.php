@@ -32,6 +32,8 @@ class CategoryRequest extends FormRequest
         return [
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('categories')->where(function ($query) {
                     $query->where('title', $this->title)
                         ->whereNull('deleted_at');

@@ -23,6 +23,16 @@ class DeanOfCollegeController extends Controller
 				'college:id,name',
 			]);
 
+		$authUser = Auth::user();
+		if ($authUser && $authUser->role != 1 && $authUser->is_college_rep) {
+			$collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+			if ($collegeId) {
+				$query->where('college_id', $collegeId);
+			} else {
+				$query->whereRaw('1 = 0');
+			}
+		}
+
 		if (!empty($search)) {
 			$query->where(function ($q) use ($search) {
 				$q->whereHas('college', function ($collegeQuery) use ($search) {
@@ -35,7 +45,7 @@ class DeanOfCollegeController extends Controller
 		}
 
 		if ($request->has('orderby') && $request->has('ascend')) {
-			$query->orderBy($request->get('orderby'), $request->get('ascend') === 'true' ? 'asc' : 'desc');
+			$query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
 		} else {
 			$query->orderBy('start_date', 'desc');
 		}
@@ -80,13 +90,17 @@ class DeanOfCollegeController extends Controller
 		$data = DeanOfCollege::with([
 				'user:id,name',
 				'user.staff_latest:staff_employs.id,staff_employs.user_id,staff_employs.department_id',
-				'user.staff_latest.department:id,name',
+				'user.staff_latest.department:id,name,college_id',
 				'college:id,name',
 			])
 			->select('id', 'college_id', 'user_id', 'start_date', 'end_date')->find($id);
 
 		if (!$data) {
 			return response()->json(['message' => 'Not found'], 404);
+		}
+
+		if ($data->user && $data->user->staff_latest && $data->user->staff_latest->department) {
+			$data->user->staff_latest->department->makeVisible('college_id');
 		}
 
 		return response()->json(['result' => $data, 'status' => 200]);

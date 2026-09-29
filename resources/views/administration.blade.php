@@ -25,11 +25,9 @@
                 </div>
 
 
-
             </div>
         </div>
     </div>
-
 
 
     </div>
@@ -39,20 +37,12 @@
         <div class="container">
             <div class="row">
                 <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12">
-                    <div class="blogarae__img__2 course__details__img__2 aos-init aos-animate" data-aos="fade-up">
-                        <img loading="lazy" src="{{ URL::to($data['administration']->img) }}" alt="عن الجامعة">
+                    <div class="blogarae__img__2 course__details__img__2 " data-aos="fade-up">
+                        <img loading="lazy" src="{{ URL::to($data['administration']?->img) }}" alt="عن الجامعة">
                     </div>
                     <div class="blog__details__content__wraper">
                         <div class="blog__details__content">
-                            @php
-                                $content = preg_replace(
-                                    '/<p([^>]*)>/',
-                                    '<p$1 data-aos="fade-up">',
-                                    $data['administration']->detail
-                                );
-                            @endphp
-
-                            {!! $content !!}
+                            {!! \App\Helpers\SanitizeHelper::cleanAndFormat($data['administration']?->detail) !!}
                         </div>
                         <div class="blog__details__tag" data-aos="fade-up">
                             <ul class="share__list" data-aos="fade-up">
@@ -60,8 +50,8 @@
                                     Share
                                 </li>
                                 <li>
-                                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ url()->current() }}&quote=Vice-Chancellor"
-                                        target="_blank" class="facebook-share-button">
+                                    <a href="{{ 'https://www.facebook.com/sharer/sharer.php?' . http_build_query(['u' => url()->current(), 'quote' => 'Vice-Chancellor']) }}"
+                                        target="_blank" rel="noopener noreferrer" class="facebook-share-button">
                                         <i class="icofont-facebook"></i>
                                     </a>
                                 </li>
@@ -69,18 +59,13 @@
                                     <a href="{{ 'https://twitter.com/intent/tweet?' . http_build_query([
         'url' => url()->current(),
         'text' => 'Administration',
-        'hashtags' => 'Sudan University of Science and Technology'
+        'hashtags' => 'SUST,SudanUniversity'
     ]) }}" target="_blank" rel="noopener noreferrer">
                                         <i class="icofont-twitter"></i>
                                     </a>
                                 </li>
                             </ul>
                         </div>
-
-
-
-
-
 
 
                     </div>

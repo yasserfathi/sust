@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import DOMPurify from 'dompurify';
 
 const props = defineProps({
     data: {
@@ -16,6 +16,10 @@ const props = defineProps({
 // Access the specific page content from the data object using the pageType key
 const pageContent = computed(() => {
     return props.data[props.pageType] || {};
+});
+
+const sanitizedDetail = computed(() => {
+    return DOMPurify.sanitize(pageContent.value?.detail || '');
 });
 
 // Generate a readable title from the pageType
@@ -40,7 +44,7 @@ const title = computed(() => {
 </script>
 
 <template>
-    <v-container>
+    <v-container fluid class="px-md-8 px-4">
         <v-row>
             <!-- Main Content Area -->
             <v-col cols="12" md="8">
@@ -63,7 +67,7 @@ const title = computed(() => {
 
                     <!-- Page Detail Content -->
                     <v-card-text class="pt-4">
-                        <div v-html="pageContent.detail" class="text-body-1"></div>
+                        <div v-html="sanitizedDetail" class="text-body-1"></div>
                     </v-card-text>
                 </v-card>
 

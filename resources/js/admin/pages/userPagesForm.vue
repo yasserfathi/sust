@@ -6,7 +6,7 @@
         <v-col cols="12" class="pt-0">
           <v-select id="category_id" name="category_id" :items="categories" item-title="title" item-value="id"
             v-model="category_id" @update:modelValue="getPages($event)" label="عناوين الفئات"
-            :error-messages="errors.category_id"></v-select>
+            :error-messages="errors.category_id" density="comfortable"></v-select>
         </v-col>
       </v-row>
       <v-row v-if="data.length > 0">
@@ -25,12 +25,9 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, onMounted, toRaw, watch } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
 import { Form, useField, useForm } from 'vee-validate';
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
-import { nextTick, ref } from 'vue';
 import axios from 'axios';
 import { isEqual } from 'lodash';
 
@@ -38,7 +35,13 @@ const props = defineProps({
   user_id: Number
 });
 
-const url = route('category_page_user.index',props.user_id)
+const url = computed(() => {
+  try {
+    return route('category_page_user.index', props.user_id || -1);
+  } catch (e) {
+    return `/api/category_page_user/${props.user_id || -1}`;
+  }
+});
 const headers = [
   { title: 'عنوان الفئة', key: 'title', sortable: false, width: 200 },
   { title: 'عناوين الصفحات', key: 'category_page', sortable: false },
@@ -85,16 +88,16 @@ const save = handleSubmit(async () => {
   if (id.value < 0) {
     await axios.post(route('category_page_user.store',{ user_id: props.user_id, pages: page_ids.value.toString() })).then(result => {
       table.value.PopulateTable(result.data.status, []);
-    })
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); })
   } else {
     let array_diff = checked_ids.value.filter(item => !page_ids.value.includes(item));
     var arr = array_diff.map(item => item * -1); // reverse positives ids to negatives and versa
     page_ids.value = page_ids.value.concat(arr);
     await axios.put(route('category_page_user.update',{ user_id: props.user_id, pages: page_ids.value.toString() })).then(result => {
       table.value.PopulateTable(result.data.status, []);
-    })
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); })
   }
-  table.value.SubmitLoading = false;
+  
 });
 
 function editItem(item: any) {

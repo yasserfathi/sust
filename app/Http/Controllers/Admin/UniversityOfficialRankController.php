@@ -35,7 +35,7 @@ class UniversityOfficialRankController extends Controller
 		}
 
 		if ($request->has('orderby') && $request->has('ascend')) {
-			$query->orderBy($request->get('orderby'), $request->get('ascend') === 'true' ? 'asc' : 'desc');
+			$query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
 		} else {
 			$query->orderBy('start_date', 'desc');
 		}
@@ -81,7 +81,7 @@ class UniversityOfficialRankController extends Controller
 	{
 		$data = UniversityOfficialRank::with([
 			'user:id,name',
-			'user.staff_latest:id,user_id,department_id',
+			'user.staff_latest:staff_employs.id,staff_employs.user_id,staff_employs.department_id,staff_employs.hire_date',
 			'user.staff_latest.department:id,name',
 			'college:id,name',
 		])

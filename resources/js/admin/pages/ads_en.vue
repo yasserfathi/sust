@@ -1,5 +1,6 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="اعلانات الجامعة باللغة الانجليزية"
         @setFieldError="setFieldError" @save="save" @edit-item="editItem" @change-priority="changePriority"
@@ -7,29 +8,26 @@
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
             <v-col cols="12" class="pt-0">
-              <v-text-field id="title" name="title" label="عنوان الاعلان" v-model="title" variant="underlined"
-                class="text-caption" prepend-icon="mdi-bank" :error-messages="errors.title"></v-text-field>
+              <v-text-field autofocus id="title" name="title" label="عنوان الاعلان" v-model="title" variant="outlined"
+                class="text-caption" prepend-icon="mdi-bank" :error-messages="errors.title" density="comfortable" dir="ltr" maxlength="255" counter="255"></v-text-field>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-show="colleges && colleges.length > 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getAlbums($event)"
-                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getAlbums($event)" label="اسماء الكليات" :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0">
               <date-picker label="تاريخ الاعلان" id="ad_date" name="ad_date" v-model="ad_date"
                 :error-messages="errors.ad_date"></date-picker>
             </v-col>
-            <v-col cols="6" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0">
               <v-text-field id="duration" name="duration" label="عدد أيام عرض الاعلان" v-model="duration"
-                variant="underlined" class="text-caption" prepend-icon="mdi-bank"
-                :error-messages="errors.duration"></v-text-field>
+                variant="outlined" class="text-caption" prepend-icon="mdi-bank"
+                :error-messages="errors.duration" density="comfortable"></v-text-field>
             </v-col>
-            <v-col cols="12" :md="filePath != undefined ? 5 : 6" class="pt-0">
-              <v-file-input type="file" id="file" name="file" ref="fileInput" show-size @change="onSelectFile" chips
-                label="اختر الملف  المرفق" accept='.dox,.docx,.pdf' variant="underlined"
-                :error-messages="errors.file"></v-file-input>
+            <v-col cols="12" :md="filePath != '' ? 5 : 6" class="pt-0">
+              <v-file-input type="file" id="file" name="file" v-model="file" show-size chips label="اختر الملف المرفق" accept='.dox,.docx,.pdf' variant="outlined" :error-messages="errors.file" density="comfortable"></v-file-input>
             </v-col>
-            <v-col v-if="filePath != undefined" cols="12" md="1" class="pt-7">
+            <v-col v-if="filePath != ''" cols="12" md="1" class="pt-7">
               <a :href="BASE_URL + filePath" class="text-subtitle-2">الملف الحالي<v-icon
                   icon="mdi-file-document"></v-icon></a>
             </v-col>
@@ -37,7 +35,7 @@
               <v-select id="album_id" name="album_id" :disabled="disabled" class="mb-5" :items="albums"
                 density="comfortable" item-title="title" item-value="id" prepend-icon="mdi-bank" v-model="album_id"
                 @update:modelValue="getAlbumPhotos($event)" label="البومات الصور" :error-messages="errors.album_id"
-                variant="underlined"></v-select>
+                variant="outlined"></v-select>
               <v-dialog v-model="showImage" width="800">
                 <v-card>
                   <v-card-text class="pa-3">
@@ -49,7 +47,7 @@
               <v-dialog v-model="showAlbum" persistent>
                 <v-card class="mx-auto bg-grey-lighten-4" v-if="album_photos.length > 0">
                   <v-container fluid>
-                    <v-row dense>
+                    <v-row density="comfortable">
                       <v-col cols="12" class="mb-4">
                         <div class="text-red-darken-3">صور البوم - {{ album_title }}</div>
                       </v-col>
@@ -80,7 +78,7 @@
               </v-dialog>
               <v-card class="mx-auto mt-4 bg-grey-lighten-4" v-if="photos.length > 0">
                 <v-container fluid>
-                  <v-row dense>
+                  <v-row density="comfortable">
                     <v-col cols="12" class="mb-4">
                       <div class="text-red-darken-3">الصور المضافة لمحتوى الاعلان</div>
                     </v-col>
@@ -105,9 +103,9 @@
               </v-card>
             </v-col>
             <v-col cols="12">
-              <v-text-field type="text" label="الكلمات المفتاحية" v-model="textBox" variant="underlined"
+              <v-text-field type="text" label="الكلمات المفتاحية" v-model="textBox" variant="outlined"
                 @keyup.enter="addKeyWords" prepend-icon="mdi-bank" v-click-outside="addKeyWords"
-                :error-messages="errors.textBox">
+                :error-messages="errors.textBox" density="comfortable">
                 <template v-slot:append>
                   <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
                 </template>
@@ -118,12 +116,12 @@
             </v-col>
             <v-divider></v-divider>
             <v-col cols="12" class="mt-1">
-              <v-text-field name="detail_portion" variant="underlined" label="جزء من المحتوى" v-model="detail_portion"
-                :error-messages="errors.detail_portion" prepend-icon="mdi-bank"></v-text-field>
+              <v-text-field name="detail_portion" variant="outlined" label="جزء من المحتوى" v-model="detail_portion"
+                :error-messages="errors.detail_portion" prepend-icon="mdi-bank" density="comfortable" dir="ltr"></v-text-field>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
               <p class="font-weight-medium mb-2"><v-icon>mdi-plus</v-icon> تفاصيل الاعلان</p>
-              <Editor v-model="detail" />
+              <Editor v-model="detail" dir="ltr" />
               <span style="color:#ba0061;font-size: 12px;">{{ errors.detail }}</span>
             </v-col>
             <v-col cols="12" class="pt-0 mt-0">
@@ -143,29 +141,19 @@
             تأكيد عملية الحذف ؟
           </v-col>
         </v-row>
-        <v-row>
-          <v-col cols="12" class="mx-1">
-            <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
-          </v-col>
-        </v-row>
-        <v-row>
-          <v-col cols="12" class="pt-0">
-            <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
-          </v-col>
-        </v-row>
+        <div class="d-flex justify-center mt-4">
+                  <v-btn color="green-darken-1" variant="elevated" @click="removeItem()" rounded="pill" class=" px-8">موافق</v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill" class="ms-4 px-8">الغاء</v-btn>
+                </div>
       </v-card-text>
     </v-card>
   </v-dialog>
+  </div>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw, watch } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
-const Editor = defineAsyncComponent(() => import('../components/Editor.vue'))
-const datePicker = defineAsyncComponent(() => import('../components/DatePicker.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import { z as zod } from 'zod';
-import { nextTick, onBeforeMount, ref } from 'vue';
 import axios from 'axios';
 
 const url = route('ads_en.index')
@@ -193,19 +181,19 @@ interface FormFields {
   active: boolean;
 }
 
-const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const BASE_URL = window.location.origin + '/';
 const MAX_FILE_SIZE = 5000000;
 const ACCEPTED_FILE_TYPES = ["application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/pdf"];
 
 const validationSchema = toTypedSchema(
   zod.object({
     college_id: zod.number({ required_error: "اختر اسم الكلية" }),
-    title: zod.string({ required_error: "ادخل عنوان الاعلان" }).min(1, { message: "ادخل عنوان الاعلان" }),
-    ad_date: zod.date({ required_error: "اختر تاريخ الاعلان" }),
+    title: zod.string({ required_error: "ادخل عنوان الاعلان" }).min(1, { message: "ادخل عنوان الاعلان" }).max(255, { message: "يجب أن لا يتجاوز العنوان 255 حرفاً" }),
+    ad_date: zod.any({ required_error: "اختر تاريخ الاعلان", invalid_type_error: "تأكد من تاريخ الاعلان" }),
     duration: zod.preprocess((val) => String(val), zod.string().min(1, { message: "ادخل عدد أيام عرض الاعلان" })),
     file: zod.any().optional().refine((files) => files?.length == 1, "اختر الملف المرفق")
-      .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `الحد الأقصى لحجم الملف هو 5 ميجابايت`)
-      .refine((files) => ACCEPTED_FILE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .doc, .docx, .pdf").nullish(),
+      .refine((files) => ((Array.isArray(files) ? files[0] : files)?.size || 0) <= MAX_FILE_SIZE, `الحد الأقصى لحجم الملف هو 5 ميجابايت`)
+      .refine((files) => (!files || files.length === 0) ? true : ACCEPTED_FILE_TYPES.includes((Array.isArray(files) ? files[0] : files)?.type), "يتم دعم  فقط .doc, .docx, .pdf").nullish(),
     detail_portion: zod.string({ required_error: "ادخل جزء من المحتوى" }).trim().min(1, { message: 'ادخل جزء من المحتوى' }),
     detail: zod.string({ required_error: "ادخل المحتوى" }).trim().min(1, { message: 'ادخل المحتوى' }),
   })
@@ -218,7 +206,7 @@ const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<Fo
 const id = ref(-1);
 let colleges = ref<Array<any>>([]);
 let albums = ref<Array<any>>([]);
-let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+let chipData = ref(['جامعة السودان للعلوم والتكنولوجيا']);
 
 
 const disabled = ref(true);
@@ -255,8 +243,6 @@ let ErorrMsg = 'اسم الاعلان موجود مسبقا'
 
 const save = handleSubmit((values) => {
 
-  let dateVal = new Date(values.ad_date).toLocaleDateString('en-US')
-
   let photo_ids = photos.value.map((a: any) => a.id);
 
   const formData = new FormData();
@@ -265,13 +251,21 @@ const save = handleSubmit((values) => {
   formData.append("lang", '2')
   formData.append("photos", photo_ids.sort().toString())
   formData.append("keywords", chipData.value.toString())
-  formData.append("ad_date", new Date(values.ad_date.toString()).toLocaleDateString('sv-SE'))
+  let formattedDate = '';
+  if (typeof values.ad_date === 'string' && values.ad_date.includes('-')) {
+    formattedDate = values.ad_date;
+  } else {
+    const d = new Date(values.ad_date);
+    formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  formData.append("ad_date", formattedDate)
   formData.append("duration", values.duration)
   formData.append("detail_portion", values.detail_portion)
   formData.append("detail", values.detail)
   formData.append("active", Number(active.value).toString())
-  if (fileInput.value.files[0] != undefined) {
-    formData.append("file", fileInput.value.files[0])
+  if (file.value) {
+    const f = Array.isArray(file.value) ? file.value[0] : file.value;
+    if (f) formData.append("file", f);
   }
   if (id.value > -1) {
     formData.append('_method', 'put');
@@ -300,7 +294,7 @@ function editItem(item: any) {
         college_id: item.college_id,
         title: item.title,
         duration: String(item.duration),
-        ad_date: new Date(item.ad_date),
+        ad_date: item.ad_date,
         active: item.active,
         detail_portion: item.detail_portion,
         detail: item.detail,
@@ -316,6 +310,9 @@ function close() {
   nextTick(() => {
     id.value = -1
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    filePath.value = '';
+    photo.value = '';
   });
   table.value.disableEditButton = false;
   table.value.dialog = false;
@@ -328,15 +325,18 @@ function changePriority(item: any) {
   table.value.tableloading = false
 }
 
-function onSelectFile() {
-  file.value = fileInput.value.files
-}
+
 
 function addKeyWords() {
   if (textBox.value != undefined && textBox.value.trim() != '') {
-    chipData.value.push(textBox.value)
-    textBox.value = ""
+    const parts = textBox.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    parts.forEach(part => {
+      if (!chipData.value.includes(part)) {
+        chipData.value.push(part);
+      }
+    });
   }
+  textBox.value = "";
 }
 
 function removeItem() {
@@ -357,7 +357,8 @@ function removeItem() {
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 async function getAlbums(college_id: any) {
@@ -390,7 +391,7 @@ async function getAlbumPhotos(album_id: any) {
 
 function showModal(photoPath: any, desc: any) {
   photoDesc.value = desc
-  photo.value = BASE_URL + photoPath
+  photo.value = BASE_URL + '/' + photoPath
   showImage.value = true
 }
 

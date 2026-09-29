@@ -1,6 +1,6 @@
 <template>
   <Head :title="isArabic ? 'كلمة العميد' : 'Dean Message'" />
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card class="mx-auto my-5" elevation="2">
       <!-- Header Image with College Name -->
       <v-img
@@ -71,7 +71,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { Head, usePage } from '@inertiajs/vue3';
 
 const props = defineProps<{

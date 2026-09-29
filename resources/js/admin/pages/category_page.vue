@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table :id="id" ref="table" :url="api_url" :headers="headers" toolbar_title="صفحات فئات لوحة التحكم"
         @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close"
@@ -8,16 +8,16 @@
           <v-row>
             <v-col cols="12">
               <v-select id="category_id" name="category_id" :items="categories" item-title="title" item-value="id"
-                v-model="category_id" label="عناوين الفئات" :error-messages="errors.category_id"></v-select>
+                v-model="category_id" label="عناوين الفئات" :error-messages="errors.category_id" density="comfortable"></v-select>
             </v-col>
             <v-col cols="6">
-              <v-text-field id="title" name="title" label="اسم الصفحة" v-model="title" variant="underlined"
-                :error-messages="errors.title"></v-text-field>
+              <v-text-field id="title" name="title" label="اسم الصفحة" v-model="title" variant="outlined"
+                :error-messages="errors.title" density="comfortable" maxlength="255" counter="255"></v-text-field>
             </v-col>
             <v-col cols="6">
               <v-locale-provider ltr>
-                <v-text-field id="url" name="url" label="عنوان الصفحة (URL)" v-model="url" variant="underlined"
-                  :error-messages="errors.url"></v-text-field>
+                <v-text-field id="url" name="url" label="عنوان الصفحة (URL)" v-model="url" variant="outlined"
+                  :error-messages="errors.url" density="comfortable"></v-text-field>
               </v-locale-provider>
             </v-col>
             <v-col cols="12">
@@ -33,12 +33,9 @@
 </template>
 
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
-import { nextTick, onMounted, ref } from 'vue';
 import axios from 'axios';
 import { isMatch } from 'lodash';
 
@@ -64,7 +61,7 @@ interface FormFields {
 const validationSchema = toTypedSchema(
   zod.object({
     category_id: zod.number({ required_error: "اختر عنوان الفئة" }),
-    title: zod.string({ required_error: "ادخل اسم الصفحة" }).min(1, { message: "ادخل اسم الصفحة" }),
+    title: zod.string({ required_error: "ادخل اسم الصفحة" }).min(1, { message: "ادخل اسم الصفحة" }).max(255, { message: "يجب أن لا يتجاوز الاسم 255 حرفاً" }),
     url: zod.string({ required_error: "ادخل اسم الصفحة" }).trim().min(1, { message: 'ادخل اسم الصفحة' })
   })
 );
@@ -93,7 +90,7 @@ const save = handleSubmit(async (values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status, temp);
-    })
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); })
   }
   else if (id.value === -1) {
     await axios.post(api_url, values).then(result => {
@@ -101,9 +98,9 @@ const save = handleSubmit(async (values) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
       table.value.PopulateTable(result.data.status, temp);
-    });
+    }).catch(err => { if (table?.value) table.value.SubmitLoading = false; console.error(err); });
   }
-  table.value.SubmitLoading = false;
+  
 });
 
 function editItem(item: any) {

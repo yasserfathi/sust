@@ -1,38 +1,42 @@
 <template>
-  <v-container>
+  <div>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table :id="id" ref="table" :url="url" :headers="headers" toolbar_title="معارض الصور" @edit-item="editItem"
-         @setFieldError="setFieldError" @close="close" :fullscreen="fullscreen" :showButtons="false">
+        @setFieldError="setFieldError" @close="close" :fullscreen="fullscreen" :showButtons="false">
         <v-stepper v-model="currentStep" editable>
           <v-stepper-header>
             <v-stepper-item :complete="currentStep > 1" :value="1" title="اضافة معرض صور"></v-stepper-item>
             <v-divider></v-divider>
-            <v-stepper-item :complete="currentStep > 2" :value="2" title="اضافة صور" :editable="isStep1Valid"></v-stepper-item>
+            <v-stepper-item :complete="currentStep > 2" :value="2" title="اضافة صور"
+              :editable="isStep1Valid"></v-stepper-item>
           </v-stepper-header>
           <v-stepper-window>
             <v-stepper-window-item :value="1">
-              <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
+              <Form fast-fail name="form" class="pt-3" :validation-schema="validationSchema" lazy-validation>
                 <v-row>
-                  <v-col cols="12" md="4">
+                  <v-col cols="12" md v-show="colleges && colleges.length > 1">
                     <v-select id="college_id" name="college_id" :items="colleges" item-title="name" item-value="id"
-                      v-model="college_id" label="اسماء الكليات" :error-messages="errors.college_id"></v-select>
+                      v-model="college_id" @update:modelValue="onCollegeChange($event)" label="اسماء الكليات" variant="outlined" :error-messages="errors.college_id"
+                      density="comfortable"></v-select>
                   </v-col>
-                  <v-col cols="12" md="4">
-                    <v-text-field id="title" name="title" label="اسم المعرض باللغة العربية" v-model="title"
-                      variant="underlined" :error-messages="errors.title"></v-text-field>
+                  <v-col cols="12" md>
+                    <v-text-field autofocus id="title" name="title" label="اسم المعرض باللغة العربية" v-model="title"
+                      variant="outlined" :error-messages="errors.title" density="comfortable"></v-text-field>
                   </v-col>
-                  <v-col cols="12" md="4">
+                  <v-col cols="12" md>
                     <v-text-field id="title_en" name="title_en" label="اسم المعرض باللغة الانجليزية" v-model="title_en"
-                      variant="underlined" :error-messages="errors.title_en"></v-text-field>
+                      variant="outlined" :error-messages="errors.title_en" density="comfortable"></v-text-field>
                   </v-col>
                   <v-col cols="12">
                     <v-textarea name="description" variant="outlined" label="وصف المعرض" v-model="description"
-                      :error-messages="errors.description" auto-grow rows="1" row-height="20"></v-textarea>
+                      :error-messages="errors.description" auto-grow rows="1" row-height="20"
+                      density="comfortable"></v-textarea>
                   </v-col>
                   <v-col cols="12">
                     <v-text-field id="keyWord" name="keyWord" label="الكلمات المفتاحية" v-model="keyWord"
-                      variant="underlined" @keyup.enter="addKeyWords" prepend-icon="mdi-bank"
-                      v-click-outside="addKeyWords" :error-messages="errors.keyWord">
+                      variant="outlined" @keyup.enter="addKeyWords" prepend-icon="mdi-bank"
+                      v-click-outside="addKeyWords" :error-messages="errors.keyWord" density="comfortable">
                       <template v-slot:append>
                         <v-btn size="small" @click="addKeyWords" icon="mdi-plus"></v-btn>
                       </template>
@@ -47,13 +51,8 @@
                   </v-col>
                 </v-row>
               </Form>
-              <div class="d-flex justify-end mt-6">
-                <v-btn 
-                  color="primary" 
-                  @click="save"
-                  :loading="step1Loading"
-                  append-icon="mdi-arrow-left"
-                >
+              <div class="d-flex justify-start mt-6">
+                <v-btn color="primary" @click="save" :loading="step1Loading" append-icon="mdi-arrow-left">
                   التالي
                 </v-btn>
               </div>
@@ -77,27 +76,21 @@
                 تأكيد عملية الحذف ؟
               </v-col>
             </v-row>
-            <v-row>
-              <v-col cols="12" class="mx-1">
-                <v-btn block color="green-darken-1" @click="removeItem()" ripple rounded="xl">موافق</v-btn>
-              </v-col>
-            </v-row>
-            <v-row>
-              <v-col cols="12" class="pt-0">
-                <v-btn block color="grey-darken-1" @click="dialog = false" ripple rounded="xl">الغاء</v-btn>
-              </v-col>
-            </v-row>
+            <div class="d-flex justify-center mt-4">
+              <v-btn color="green-darken-1" variant="elevated" @click="removeItem()" rounded="pill"
+                class=" px-8">موافق</v-btn>
+              <v-btn color="grey-darken-1" variant="elevated" @click="dialog = false" rounded="pill"
+                class="ms-4 px-8">الغاء</v-btn>
+            </div>
           </v-card-text>
         </v-card>
       </v-dialog>
     </v-card>
   </v-container>
+  </div>
 </template>
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, nextTick, onMounted, ref, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
 import albumPhotosForm from '../pages/albumPhotosForm.vue'
-const Dialog = defineAsyncComponent(() => import('../components/Dialog.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
@@ -113,7 +106,7 @@ const headers = [
   { title: '', key: 'actions', sortable: false },
 ];
 
-let chipData = ref(['جامعة السودان للعلوم و التكنولوجيا']);
+let chipData = ref(['جامعة السودان للعلوم والتكنولوجيا']);
 const table = ref();
 const modal = ref();
 const currentStep = ref(1);
@@ -215,9 +208,10 @@ function close() {
   nextTick(() => {
     id.value = -1
     if (chipData.value.length < 1) {
-      chipData.value.push('جامعة السودان للعلوم و التكنولوجيا')
+      chipData.value.push('جامعة السودان للعلوم والتكنولوجيا')
     }
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
   });
   currentStep.value = 1
   table.value.dialog = false
@@ -225,9 +219,14 @@ function close() {
 
 function addKeyWords() {
   if (keyWord.value != undefined && keyWord.value.trim() != '') {
-    chipData.value.push(keyWord.value)
-    keyWord.value = ""
+    const parts = keyWord.value.split(',').map(s => s.trim()).filter(s => s !== '');
+    parts.forEach(part => {
+      if (!chipData.value.includes(part)) {
+        chipData.value.push(part);
+      }
+    });
   }
+  keyWord.value = "";
 }
 
 function removeItem() {
@@ -238,13 +237,56 @@ function removeItem() {
   dialog.value = false
 }
 
+async function onCollegeChange(c_id: number) {
+  if (!c_id) return;
+  try {
+    const response = await axios.post(route("albums.list"), { college_id: c_id });
+    if (response.data.albums && response.data.albums.length > 0) {
+      const firstAlbum = response.data.albums[0];
+      id.value = firstAlbum.id;
+      // Fetch full album details to populate inputs and keywords
+      const fullRes = await axios.get(url + '/' + firstAlbum.id);
+      const itemData = fullRes.data.result;
+      setValues({
+        college_id: itemData.college_id,
+        title: itemData.title,
+        title_en: itemData.title_en,
+        description: itemData.description,
+        active: Boolean(itemData.active)
+      });
+      if (itemData.keywords) {
+        chipData.value = itemData.keywords.split(',').map((s: string) => s.trim()).filter((s: string) => s !== '');
+      }
+    } else {
+      id.value = -1;
+      const selectedCollege = colleges.value.find((c: any) => c.id === c_id);
+      if (selectedCollege) {
+        setValues({
+          college_id: c_id,
+          title: 'معرض صور ' + selectedCollege.name,
+          title_en: 'Photo Gallery - ' + (selectedCollege.name_en || selectedCollege.name),
+          description: 'الألبوم الافتراضي لصور ' + selectedCollege.name,
+          active: true
+        });
+        chipData.value = ['جامعة السودان للعلوم والتكنولوجيا', selectedCollege.name];
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching college album:', error);
+  }
+}
+
 async function getColleges() {
   await axios.get(route('colleges.list')).then(response => {
     colleges.value = response.data.colleges;
+    if (colleges.value && colleges.value.length === 1) {
+      college_id.value = colleges.value[0].id;
+      onCollegeChange(colleges.value[0].id);
+    }
   });
 }
 
-const isStep1Valid = computed(() => 
+const isStep1Valid = computed(() =>
   id.value !== -1
 );
 

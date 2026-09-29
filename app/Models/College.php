@@ -19,6 +19,38 @@ class College extends Model implements Auditable
         return $this->hasMany(Department::class);
     }
 
+    public function albums()
+    {
+        return $this->hasMany(Album::class);
+    }
+
+    protected static function booted()
+    {
+        static::saved(function ($college) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::deleted(function ($college) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::created(function ($college) {
+            // استثناء "الإدارة" العامة للجامعة (Main Administration) لأن ألبوماتها مخصصة يدوياً
+            if ($college->id == 1 || $college->slug === 'administration') {
+                return;
+            }
+
+            $college->albums()->create([
+                'title'       => 'معرض صور ' . $college->name,
+                'title_en'    => 'Photo Gallery - ' . ($college->name_en ?: $college->name),
+                'description' => 'الألبوم الافتراضي لصور ' . $college->name,
+                'keywords'    => $college->name . ', ' . ($college->name_en ?: ''),
+                'active'      => 1,
+                'user_id'     => $college->user_id ?? (auth()->check() ? auth()->id() : 1),
+            ]);
+        });
+    }
+
     protected $casts = [
         'active' => 'boolean',
     ];
@@ -27,6 +59,7 @@ class College extends Model implements Auditable
         'college' => 'كلية',
         'deanship' => 'عمادة',
         'center' => 'مركز',
+        'institute' => 'معهد',
         'secretariat' => 'أمانة',
     ];
 

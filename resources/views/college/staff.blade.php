@@ -1,12 +1,12 @@
 @extends('college/layout')
 
-@section('content')
-    <div class="breadcrumbarea" @if (isset($data['banner']) && $data['banner'])
-        style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
-    @else
-            style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
-        @endif>
+@section('title', 'Staff members')
 
+
+@section('content')
+    <!-- breadcrumbarea__section__start -->
+    <div class="breadcrumbarea"
+        style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), url({{ !empty($data['banner']) ? URL::to($data['banner']) : URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;">
         <div class="container">
             <div class="row">
                 <div class="col-xl-12">
@@ -21,65 +21,138 @@
                             </ul>
                         </div>
                     </div>
-
                 </div>
             </div>
         </div>
-
     </div>
-    <!-- breadcrumbarea__section__end-->
+    <!-- breadcrumbarea__section__end -->
 
-    <div class="blogarea__2 sp_top_50 sp_bottom_100">
-        <div class="container-fluid">
+    <div class="blogarea__2 sp_top_30 sp_bottom_80">
+        <div class="container">
             <div class="row">
                 <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12">
+                    <div class="section-header text-center mb-4" data-aos="fade-up">
+                        <h2 class="section-title">Faculty & <span class="highlight">Staff Members</span></h2>
+                    </div>
 
-                    <div class="blog__details__content__wraper">
-                        <div class="blog__details__content">
-                            @if(count($data['staff']) > 0)
-                                <div class="dashboard__content__wraper">
-                                    <div class="dashboard__section__title">
-                                        <h3 class="heading">Staff Members</h3>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-xl-12">
-                                            <div class="dashboard__table table-responsive">
-                                                <table>
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Name</th>
-                                                            <th>Job Title</th>
-                                                            <th>Academic Rank</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        @foreach($data['staff'] as $staff)
-                                                            <tr @if($loop->even) class="dashboard__table__row" @endif>
-                                                                <th>
-                                                                    @if($staff->user)
-                                                                        <a href="{{ route('staff_home', ['name_en' => $staff->user->name_en]) }}">
-                                                                            {{ $staff->user->name_en }}
-                                                                        </a>
-                                                                    @else
-                                                                        -
-                                                                    @endif
-                                                                </th>
-                                                                <td>{{ $staff->job_title_en ?? '-' }}</td>
-                                                                <td>{{ $staff->rank_en ?? '-' }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                    @if(count($data['staff']) > 0)
+                        @php
+                            $dean = $data['staff']->firstWhere('is_dean', true);
+                            $otherStaff = $data['staff']->filter(function($item) {
+                                return empty($item->is_dean);
+                            });
+                            $staffByDept = $otherStaff->groupBy(function($item) {
+                                return $item->department->name_en ?? ($item->department->name ?? 'Other');
+                            });
+                        @endphp
+
+                        @if($dean && $dean->user)
+                            <div class="d-flex justify-content-center mb-5" data-aos="fade-up">
+                                @php
+                                    $deanImg = $dean->user->thumb_img ?: ($dean->user->img ?: '/images/default-avatar.png');
+                                    $deanName = $dean->user->name_en ?: $dean->user->name;
+                                @endphp
+                                <div class="leader-card vc-card w-100" style="max-width: 320px; margin: 0; padding: 22px 18px 18px;">
+                                    @if(!empty($dean->user->slug))
+                                        <a href="{{ route('staff_home', ['slug' => $dean->user->slug]) }}">
+                                            <img class="leader-img"
+                                                src="{{ URL::to($deanImg) }}"
+                                                style="width: 100px; height: 100px;"
+                                                onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($deanName) }}&background=ce6148&color=fff&size=140'">
+                                        </a>
+                                    @else
+                                        <img class="leader-img"
+                                            src="{{ URL::to($deanImg) }}"
+                                            style="width: 100px; height: 100px;"
+                                            onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($deanName) }}&background=ce6148&color=fff&size=140'">
+                                    @endif
+                                    <div class="leader-info mt-2">
+                                        <div class="leader-name font-weight-bold" style="font-size: 1.05rem;">
+                                            @if(!empty($dean->user->slug))
+                                                <a href="{{ route('staff_home', ['slug' => $dean->user->slug]) }}" class="text-decoration-none text-dark hover-primary">
+                                                    {{ $deanName }}
+                                                </a>
+                                            @else
+                                                {{ $deanName }}
+                                            @endif
+                                        </div>
+                                        <div class="leader-role badge text-bg-primary mt-1" style="background-color: var(--primaryColor) !important; font-size: 0.8rem; font-weight: normal; padding: 4px 10px;">Dean</div>
+                                        <div class="text-muted small mt-1">
+                                            {{ $dean->grade_en ?? ($dean->grade ?? '') }}
                                         </div>
                                     </div>
                                 </div>
-                            @else
-                                <p>No staff data available at the moment.</p>
-                            @endif
-                        </div>
-                    </div>
+                            </div>
+                        @endif
+
+                        @foreach($staffByDept as $deptName => $deptStaff)
+                            @php
+                                $trimmedName = trim($deptName);
+                                if (preg_match('/^(Department|School)\b/i', $trimmedName) || preg_match('/\b(Department|School)$/i', $trimmedName)) {
+                                    $deptDisplayTitle = $trimmedName;
+                                } else {
+                                    $deptDisplayTitle = 'Department of ' . $trimmedName;
+                                }
+                            @endphp
+                            <div class="section-header text-center my-4" data-aos="fade-up">
+                                <h3 class="section-title" style="font-size: 1.45rem;"><span class="highlight">{{ $deptDisplayTitle }}</span></h3>
+                            </div>
+
+                            <div class="row g-3 justify-content-center mb-5">
+                                @foreach($deptStaff as $staff)
+                                    @if($staff->user)
+                                        @php
+                                            $staffImg = $staff->user->thumb_img ?: ($staff->user->img ?: '/images/default-avatar.png');
+                                            $staffName = $staff->user->name_en ?: $staff->user->name;
+                                        @endphp
+                                        <div class="col-xl-4 col-lg-4 col-md-6 col-sm-6 col-12 d-flex align-items-stretch" data-aos="fade-up" data-aos-delay="{{ ($loop->iteration % 3) * 100 }}">
+                                            <div class="leader-card w-100 mb-0" style="max-width: 100%; padding: 18px 14px 15px;">
+                                                @if(!empty($staff->user->slug))
+                                                    <a href="{{ route('staff_home', ['slug' => $staff->user->slug]) }}">
+                                                        <img class="leader-img" src="{{ URL::to($staffImg) }}"
+                                                            style="width: 85px; height: 85px;"
+                                                            onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($staffName) }}&background=ce6148&color=fff&size=140'">
+                                                    </a>
+                                                @else
+                                                    <img class="leader-img" src="{{ URL::to($staffImg) }}"
+                                                        style="width: 85px; height: 85px;"
+                                                        onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($staffName) }}&background=ce6148&color=fff&size=140'">
+                                                @endif
+                                                <div class="leader-info mt-2 text-center w-100">
+                                                    <div class="leader-name" style="font-size: 0.95rem; font-weight: 600; line-height: 1.4;">
+                                                        @if(!empty($staff->user->slug))
+                                                            <a href="{{ route('staff_home', ['slug' => $staff->user->slug]) }}" class="text-decoration-none text-dark hover-primary">
+                                                                {{ $staffName }}
+                                                            </a>
+                                                        @else
+                                                            {{ $staffName }}
+                                                        @endif
+                                                    </div>
+                                                    
+                                                    @php
+                                                        $adminPos = \App\Models\HeadAdministrativePosition::with('administrativePosition')->where('user_id', $staff->user->id)->whereNull('end_date')->first();
+                                                        $isHead = \App\Models\HeadOfDepartment::where('user_id', $staff->user->id)->whereNull('end_date')->first();
+                                                    @endphp
+                                                    
+                                                    @if($adminPos && $adminPos->administrativePosition)
+                                                        <div class="leader-role badge text-bg-primary mt-1" style="background-color: var(--primaryColor) !important; font-size: 0.75rem; font-weight: normal; padding: 4px 10px;">{{ $adminPos->administrativePosition->title_en ?? $adminPos->administrativePosition->title }}</div>
+                                                    @elseif($isHead)
+                                                        <div class="leader-role badge text-bg-primary mt-1" style="background-color: var(--primaryColor) !important; font-size: 0.75rem; font-weight: normal; padding: 4px 10px;">Head of Department</div>
+                                                    @endif
+                                                    
+                                                    <div class="leader-role" style="font-size: 0.85rem; color: var(--primaryColor); font-weight: 500; margin-top: 4px;">{{ !empty($staff->grade_en) ? $staff->grade_en : (!empty($staff->grade) ? $staff->grade : 'Faculty Member') }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="alert alert-info text-center my-4" style="border-radius: 10px;">No staff data available at the moment.</div>
+                    @endif
                 </div>
+
                 @include('college/sidebar')
             </div>
         </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap');
 
 /* Override Theme Variables for this page */
 :root {
@@ -21,7 +21,7 @@ h6 {
 }
 
 body.arabic-profile {
-    font-family: 'Tajawal', 'Inter', 'Hind', sans-serif;
+    font-family: "Cairo", sans-serif;
     direction: rtl;
     text-align: right;
     background-color: #fbfcff;

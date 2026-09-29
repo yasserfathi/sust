@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
+use App\Models\Department;
 
 class WorkshopRequest extends FormRequest
 {
@@ -14,6 +15,25 @@ class WorkshopRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    
+    protected function prepareForValidation()
+    {
+        if (auth()->check() && auth()->user()->role != 1) {
+            $mergeData = ['user_id' => auth()->user()->id];
+            
+            $userDept = Department::whereHas('staff', function ($q) {
+                $q->where('user_id', auth()->user()->id);
+            })->first();
+            
+            if ($userDept) {
+                $mergeData['department_id'] = $userDept->id;
+                $mergeData['college_id'] = $userDept->college_id;
+            }
+            
+            $this->merge($mergeData);
+        }
     }
 
     protected function failedValidation(Validator $validator)
@@ -32,11 +52,14 @@ class WorkshopRequest extends FormRequest
             'college_id' => 'bail|required|string',
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('workshops')->where(function ($query) {
                     $query->where('title', $this->title)
                         ->where('lang', 1)->whereNull('deleted_at');
                 })->ignore(request()->route('workshop'))
             ],
+            'type' => 'required|in:1,2,3',
             'lang' => 'required|string',
             'photos' => 'required|string',
             'keywords' => 'required|string',

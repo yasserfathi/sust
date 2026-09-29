@@ -8,16 +8,16 @@ use App\Http\Controllers\ar\CollegeArController;
 Route::group(['prefix' => 'secretariat', 'middleware' => 'cache.prevent'], function () {
     Route::get('/{name}', [CollegeController::class, 'index'])->name('secretariat_home');
     Route::get('/{name}/about', [CollegeController::class, 'about'])->name('secretariat_about');
-    Route::get('/{name}/activities', [CollegeController::class, 'activities']);
-    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives']);
+    Route::get('/{name}/activities', [CollegeController::class, 'activities'])->name('secretariat_activities');
+    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives'])->name('secretariat_vision_mission_objectives');
     Route::get('/{name}/dean_message', [CollegeController::class, 'dean_message'])->name('secretariat_dean_message');
     Route::get('/{name}/department/{dept_name}', [CollegeController::class, 'about_department'])->name('secretariat_about_department');
     Route::get('/{name}/department/{dept_name}/programs', [CollegeController::class, 'department_programs'])->name('secretariat_department_programs');
     // News & Ads
     Route::get('/{name}/news', [CollegeController::class, 'archive'])->name('secretariat_news_archive');
     Route::get('/{name}/news/details/{slug}', [CollegeController::class, 'details'])->name('secretariat_news_detail');
-    Route::get('/{name}/ads', [CollegeController::class, 'archive'])->name('secretariat_ads_archive');
-    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'details'])->name('secretariat_ads_detail');
+    Route::get('/{name}/ads', [CollegeController::class, 'ads_archive'])->name('secretariat_ads_archive');
+    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'ads_details'])->name('secretariat_ads_detail');
     Route::get('/{name}/staff', [CollegeController::class, 'staff'])->name('secretariat_staff');
     Route::get('/{name}/about_scientific_affairs', [CollegeController::class, 'about_scientific_affairs'])->name('secretariat_about_scientific_affairs');
     Route::get('/{name}/{slug}', [CollegeController::class, 'dynamic_page'])->name('secretariat_dynamic_page');

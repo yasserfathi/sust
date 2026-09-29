@@ -32,6 +32,7 @@ class PageController extends Controller
 
         // Sanitize search input
         $search = htmlspecialchars($request->get('search', ''));
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
         // Base query
         $query = Page::select(
@@ -43,21 +44,29 @@ class PageController extends Controller
         )
             ->with('college:id,name')
             ->whereHas('college', function ($q) use ($search) {
-                $q->where('user_id', 1);
+                $authUser = Auth::user();
+                if ($authUser->role != 1) {
+                    if ($authUser->is_college_rep) {
+                        $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                        $q->where('id', $collegeId);
+                    } else {
+                        $q->where('user_id', $authUser->id);
+                    }
+                }
                 if (!empty($search)) {
-                    $q->where('name', 'like', '%' . $search . '%');
+                    $q->whereRaw('MATCH(name) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))]);
                 }
             })
             ->where('slug', $this->page_slug);
 
         // Sorting
         $orderBy = $request->get('orderby');
-        $ascend = $request->get('ascend');
+        $ascend = in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc';
 
         if ($orderBy && $ascend) {
             $query->orderBy($orderBy, $ascend);
         } else {
-            $query->orderBy('id', 'desc');
+            $query->orderByDesc('id');
         }
 
         // Pagination
@@ -87,13 +96,13 @@ class PageController extends Controller
                 $rand = hexdec(uniqid());
                 $imagename = $rand . '.' . $img->getClientOriginalExtension();
                 $imagename_thumb = $rand . '_thumb.' . $img->getClientOriginalExtension();
-
-                $img->storeAs('images/pages', $imagename, 'public');
                 $manager->read($img)->scale(width: 300)->save(public_path('images/pages_thumbnail/' . $imagename_thumb));
+                $img->storeAs('images/pages', $imagename, 'public');
 
                 $img_path = 'images/pages/' . $imagename;
                 $thumb_path = 'images/pages_thumbnail/' . $imagename_thumb;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -105,8 +114,13 @@ class PageController extends Controller
                     $filename = hexdec(uniqid()) . '.' . $file->getClientOriginalExtension();
                     $file_path = $file->storeAs('files', $filename, 'public');
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
+            }
+        }
+
+        if (isset($validator['detail_portion'])) {
+            $validator['detail_portion'] = Str::limit($validator['detail_portion'], 250, '...');
         }
 
         Page::create(array_merge(
@@ -138,20 +152,23 @@ class PageController extends Controller
                     $imagename_thumb = $rand . '_thumb.' . $img->getClientOriginalExtension();
 
                     if (Str::length($img_path) > 0 && file_exists(public_path($img_path))) {
-                        unlink($img_path);
+                        unlink(public_path($img_path));
                     }
 
                     if (Str::length($thumb_path) > 0 && file_exists(public_path($thumb_path))) {
-                        unlink($thumb_path);
+                        unlink(public_path($thumb_path));
                     }
 
-                    $img->storeAs('images/pages', $imagename, 'public');
                     $manager->read($img)->scale(width: 300)->save(public_path('images/pages_thumbnail/' . $imagename_thumb));
+                    $img->storeAs('images/pages', $imagename, 'public');
 
                     $img_path = 'images/pages/' . $imagename;
                     $thumb_path = 'images/pages_thumbnail/' . $imagename_thumb;
                 } catch (Exception $e) {
+                    return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
                 }
+            } else {
+                return response()->json(['message' => ['img' => 'عفوا، حجم الصورة يتجاوز الحد المسموح به أو الملف غير صالح'], 'status' => 409], 200);
             }
         }
 
@@ -166,7 +183,8 @@ class PageController extends Controller
                     }
                     $file_path = $file->storeAs('files', $filename, 'public');
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -178,7 +196,7 @@ class PageController extends Controller
         $record->img = $img_path;
         $record->thumb_img = $thumb_path;
         $record->file = $file_path;
-        $record->detail_portion = $request->detail_portion;
+        $record->detail_portion = Str::limit($request->detail_portion, 250, '...');
         $record->detail = $request->detail;
         $record->auth_id = Auth::user()->id;
 
@@ -192,24 +210,23 @@ class PageController extends Controller
 
     public function destroy($slug, Page $page)
     {
-        $data = Page::where('slug', $slug)->find($page->id);
-        if (!$data) {
+        if ($page->slug !== $slug) {
             return response()->json(['message' => 'الصفحة غير موجودة أو تم حذفها مسبقاً', 'status' => 404], 404);
         }
 
-        if (Str::length($data->img) > 0 && file_exists(public_path($data->img))) {
-            unlink($data->img);
+        if (Str::length($page->img) > 0 && file_exists(public_path($page->img))) {
+            unlink(public_path($page->img));
         }
 
-        if (Str::length($data->thumb_img) > 0 && file_exists(public_path($data->thumb_img))) {
-            unlink($data->thumb_img);
+        if (Str::length($page->thumb_img) > 0 && file_exists(public_path($page->thumb_img))) {
+            unlink(public_path($page->thumb_img));
         }
 
-        if (Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
-            unlink($data->file);
+        if (Str::length($page->file) > 0 && file_exists(public_path($page->file))) {
+            unlink(public_path($page->file));
         }
 
-        $data->delete();
+        $page->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 

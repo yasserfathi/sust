@@ -15,59 +15,65 @@ class WorkshopEnController extends Controller
 {
     public function index(Request $request)
     {
-        $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        $itemsPerPage = (int) htmlspecialchars($request->get('items') ?? 15);
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
-        //collection serach Workshop Title
-        $result_workshop_title = Workshop::select('id', 'college_id', 'workshop_date', 'active')
-            ->selectRaw('SUBSTRING(`title`, 1, 80) as `title`');
+        $query = Workshop::select('workshops.id', 'workshops.college_id', 'workshops.title', 'workshops.type', 'workshops.workshop_date', 'workshops.active')
+            ->selectRaw('SUBSTRING(workshops.`title`, 1, 80) as `title`')
+            ->with('college:id,name')
+            ->where('workshops.lang', 2);
+
+        $authUser = Auth::user();
+        if ($authUser->role != 1) {
+            $query->whereHas('college', function ($q) use ($authUser) {
+                if ($authUser->is_college_rep) {
+                    $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                    $q->where('id', $collegeId);
+                } else {
+                    $q->where('user_id', $authUser->id);
+                }
+            });
+        } else {
+            $query->whereHas('college');
+        }
 
         if (!empty($search)) {
-            $result_workshop_title->where('title', 'like', '%' . $search . '%')
-                ->orWhere('workshop_date', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('MATCH(workshops.title) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
+                  ->orWhere('workshops.workshop_date', 'like', '%' . $search . '%')
+                  ->orWhereHas('college', function ($cq) use ($search) {
+                      $cq->where('name', 'like', '%' . $search . '%');
+                  });
+            });
         }
 
-        $result_workshop_title->with('college:id,name')->whereHas('college', function ($query) {
-            $query->where('user_id', 1);
-        })->where('lang', 2)->orderBy('id', 'DESC');
+        if ($request->has('orderby') && $request->has('ascend')) {
+            $orderBy = $request->get('orderby');
+            $sortDirection = ($request->get('ascend') === 'true' || $request->get('ascend') === 'asc' || $request->get('ascend') == '1') ? 'asc' : 'desc';
 
-        // ===================================
-
-        //collection serach College Name
-        $result_college_name = Workshop::select('id', 'college_id', 'title', 'workshop_date', 'active')
-            ->selectRaw('SUBSTRING(`title`, 1, 80) as `title`');
-
-        $result_college_name->with('college:id,name')->whereHas('college', function ($query) use ($search) {
-            $query->where('user_id', 1);
-            if (!empty($search)) {
-                $query->where('name', 'like', '%' . $search . '%');
+            if ($orderBy === 'college.name') {
+                $query->join('colleges', 'colleges.id', '=', 'workshops.college_id')
+                      ->orderBy('colleges.name', $sortDirection);
+            } else {
+                $query->orderBy('workshops.' . ltrim($orderBy, 'workshops.'), $sortDirection);
             }
-        })->where('lang', 2)->orderBy('id', 'DESC');
-
-        $all = $result_workshop_title->get()->merge($result_college_name->get());
-
-        if ($request->exists('orderby') && $request->exists('ascend')) {
-            $all = $all->sortBy([[$request->get('orderby'), $request->get('ascend')]]);
+        } else {
+            $query->orderBy('workshops.id', 'desc');
         }
 
-        if ($itemsPerPage == 0) {
-            $itemsPerPage = count($all);
-        }
-
-        return response()->json(['result' => $all->paginate((int)$itemsPerPage)], 200);
+        return response()->json(['result' => $query->paginate($itemsPerPage)], 200);
     }
 
     public function show(Workshop $workshop)
     {
-        $data = Workshop::select('college_id', 'title', 'workshop_date', 'active', 'detail_portion', 'detail', 'photos', 'file')
-            ->with('college:id,name')->where('id', $workshop->id)->first();
-
-        $list_photos = AlbumPhoto::select('id', 'thumb_img as thumb_photo', 'img as photo', 'title')->whereIn('id', explode(',', $data->photos))->get();
-
-        $data->photos = $list_photos;
+        $data = Workshop::select('id', 'college_id', 'title', 'type', 'workshop_date', 'active', 'detail_portion', 'detail', 'file')
+            ->with(['college:id,name', 'photos:id,thumb_img as thumb_photo,img as photo,title'])
+            ->where('id', $workshop->id)
+            ->first();
 
         return response()->json(['result' => $data, 'status' => 200]);
     }
@@ -88,6 +94,7 @@ class WorkshopEnController extends Controller
                 $filename = rand(11111, 99999) . '.' . $file->getClientOriginalExtension();
                 $file_path = $file->storeAs('files', $filename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
         Workshop::create(array_merge(
@@ -95,6 +102,7 @@ class WorkshopEnController extends Controller
             ['auth_id' => Auth::user()->id],
             ['active' => $active],
             ['file' => $file_path],
+            ['lang' => 2],
         ));
         return response()->json(['message' => 'created', 'status' => 201]);
     }
@@ -111,10 +119,11 @@ class WorkshopEnController extends Controller
                     $filename = $rand . '.' . $file->getClientOriginalExtension();
                     $file_path = $file->storeAs('files', $filename, 'public');
                     if (Str::length($record->file) > 0 && file_exists(public_path($record->file))) {
-                        unlink($record->file);
+                        unlink(public_path($record->file));
                     }
-                } catch (Exception  $e) {
-                }
+                } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
         $active = 0;
@@ -122,6 +131,7 @@ class WorkshopEnController extends Controller
             $active = 1;
         }
         $record->title = $request->title;
+        $record->type = $request->type ?? 1;
         $record->workshop_date = $request->workshop_date;
         $record->active = $active;
         $record->keywords = $request->keywords;
@@ -140,11 +150,10 @@ class WorkshopEnController extends Controller
 
     public function destroy(Workshop $workshop)
     {
-        $data = Workshop::find($workshop->id);
-        if (Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
-            unlink($data->file);
+        if (Str::length($workshop->file) > 0 && file_exists(public_path($workshop->file))) {
+            unlink(public_path($workshop->file));
         }
-        $data->delete();
+        $workshop->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 }

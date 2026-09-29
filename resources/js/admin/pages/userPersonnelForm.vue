@@ -3,12 +3,12 @@
     disable-pagination hide-no-data hover>
     <template v-slot:top>
       <v-toolbar>
-        <v-toolbar-title>البيانات الوظيفية</v-toolbar-title>
+        <v-toolbar-title>البيانات الوظيفية {{ props.user_name ? 'لـ ' + props.user_name : '' }}</v-toolbar-title>
         <v-divider class="mx-4" inset vertical></v-divider>
         <v-spacer></v-spacer>
         <v-dialog v-model="dialog" persistent max-width="1100px">
           <template v-slot:activator="{ props }">
-            <v-btn class="mb-2 bg-red" prepend-icon="mdi-plus" v-bind="props" @click="openDialog" ripple rounded="xl">
+            <v-btn class="mb-2 bg-red" prepend-icon="mdi-plus" v-bind="props" ripple rounded="xl" @click="(e) => e.currentTarget.blur()">
               اضافة بيانات
             </v-btn>
           </template>
@@ -21,76 +21,67 @@
               </v-btn>
             </v-toolbar>
             <v-card-text>
-              <v-container>
+              <v-container fluid class="px-md-8 px-4">
                 <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
                   <v-row>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="6" v-show="colleges && colleges.length > 1">
                       <v-select id="college_id" name="college_id" :items="colleges" item-title="name" item-value="id"
-                        density="comfortable" prepend-icon="mdi-bank" v-model="college_id" label="اسماء الكليات"
-                        :error-messages="errors.college_id" variant="underlined"></v-select>
+                        prepend-icon="mdi-bank" v-model="college_id" label="اسماء الكليات"
+                        :error-messages="errors.college_id" variant="outlined" density="comfortable"></v-select>
                     </v-col>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="6">
                       <v-select id="department_id" name="department_id" :disabled="deartment_disabled"
-                        :items="departments" item-title="name" item-value="id" density="comfortable"
-                        prepend-icon="mdi-bank" v-model="department_id" label="اسماء الاقسام"
-                        :error-messages="errors.department_id" variant="underlined"></v-select>
+                        :items="departments" item-title="name" item-value="id" prepend-icon="mdi-bank"
+                        v-model="department_id" label="اسماء الاقسام" :error-messages="errors.department_id"
+                        variant="outlined" density="comfortable"></v-select>
                     </v-col>
-                    <v-col cols="12" md="3">
-                      <v-select id="rank" name="rank" :items="ranks" item-title="name" density="comfortable"
-                        item-value="id" prepend-icon="mdi-bank" v-model="rank" label="الدرجات العلمية باللغة العربية"
-                        :error-messages="errors.rank" variant="underlined"></v-select>
+                    <v-col cols="12" md="6">
+                      <v-select id="grade" name="grade" :items="grades" item-title="name"
+                        item-value="id" prepend-icon="mdi-bank" v-model="grade"
+                        label="المسمى الوظيفي باللغة العربية" :error-messages="errors.grade"
+                        variant="outlined" density="comfortable"></v-select>
                     </v-col>
-                    <v-col cols="12" md="3">
-                      <v-select id="rank_en" name="rank_en" :items="ranks_en" item-title="name" density="comfortable"
-                        item-value="id" prepend-icon="mdi-bank" v-model="rank_en" label="الدرجات العلمية بالانجليزية"
-                        :error-messages="errors.rank_en" variant="underlined"></v-select>
+                    <v-col cols="12" md="6">
+                      <v-select id="grade_en" name="grade_en" :items="grades_en" item-title="name"
+                        item-value="id" prepend-icon="mdi-bank" v-model="grade_en"
+                        label="المسمى الوظيفي بالانجليزية" :error-messages="errors.grade_en"
+                        variant="outlined" density="comfortable"></v-select>
                     </v-col>
-                    <v-col cols="12" md="3">
-                      <v-select id="job_title" name="job_title" :items="job_titles" item-title="name"
-                        density="comfortable" item-value="id" prepend-icon="mdi-bank" v-model="job_title"
-                        label="المسمى الوظيفي باللغة العربية" :error-messages="errors.job_title"
-                        variant="underlined"></v-select>
+                    <v-col cols="12">
+                      <datePicker prepend-icon="mdi-calendar" id="hire_date" name="hire_date"
+                        v-model:modelValue="hire_date" label="تاريخ التعيين" :error-messages="errors.hire_date"
+                        variant="outlined"></datePicker>
                     </v-col>
-                    <v-col cols="12" md="3">
-                      <v-select id="job_title_en" name="job_title_en" :items="job_titles_en" item-title="name"
-                        density="comfortable" item-value="id" prepend-icon="mdi-bank" v-model="job_title_en"
-                        label="المسمى الوظيفي بالانجليزية" :error-messages="errors.job_title_en"
-                        variant="underlined"></v-select>
+                    <v-col cols="12" md="6">
+                      <v-text-field autofocus id="specialty" name="specialty" label="التخصص العام باللغة العربية"
+                        v-model="specialty" variant="outlined" :error-messages="errors.specialty" density="comfortable"></v-text-field>
                     </v-col>
-                    <v-col cols="12" md="4">
-                      <date-picker label="تاريخ التعيين" id="hire_date" name="hire_date" v-model="hire_date"
-                        :error-messages="errors.hire_date"></date-picker>
-                    </v-col>
-                    <v-col cols="12" md="3">
-                      <v-text-field id="specialty" name="specialty" label="التخصص العام باللغة العربية"
-                        v-model="specialty" variant="underlined" :error-messages="errors.specialty"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="6">
                       <v-text-field id="specialty_en" name="specialty_en" label="التخصص العام بالانجليزية"
-                        v-model="specialty_en" variant="underlined"
-                        :error-messages="errors.specialty_en"></v-text-field>
+                        v-model="specialty_en" variant="outlined"
+                        :error-messages="errors.specialty_en" density="comfortable"></v-text-field>
                     </v-col>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="6">
                       <v-text-field id="subspecialty" name="subspecialty" label="التخصص الدقيق باللغة العربية"
-                        v-model="subspecialty" variant="underlined"
-                        :error-messages="errors.subspecialty"></v-text-field>
+                        v-model="subspecialty" variant="outlined"
+                        :error-messages="errors.subspecialty" density="comfortable"></v-text-field>
                     </v-col>
-                    <v-col cols="12" md="3">
+                    <v-col cols="12" md="6">
                       <v-text-field id="subspecialty_en" name="subspecialty_en" label="التخصص الدقيق باللغة الانجليزية"
-                        v-model="subspecialty_en" variant="underlined"
-                        :error-messages="errors.subspecialty_en"></v-text-field>
+                        v-model="subspecialty_en" variant="outlined"
+                        :error-messages="errors.subspecialty_en" density="comfortable"></v-text-field>
                     </v-col>
                   </v-row>
+                  <div class="d-flex justify-start mt-6">
+                    <v-btn color="green-darken-1" variant="elevated" @click="save" :loading="SubmitLoading" rounded="pill" class=" px-8"
+ :disabled="!isFormValid">
+ {{ btnText }}
+ </v-btn>
+            <v-btn color="grey-darken-1" variant="elevated" @click="close(), dialog = false" rounded="pill" class="ms-4 px-8">
+ الغاء
+ </v-btn>
+                  </div>
                 </Form>
-                <div class="mt-5" cols="12">
-                  <v-btn color="green-darken-1" variant="elevated" type="submit" :loading="SubmitLoading" @click="save"
-                    ripple rounded="xl">
-                    {{ btnText }}
-                  </v-btn>
-                  <v-btn color="grey-darken-1" class="mr-1" variant="elevated" @click="close" ripple rounded="xl">
-                    الغاء
-                  </v-btn>
-                </div>
               </v-container>
             </v-card-text>
           </v-card>
@@ -108,14 +99,13 @@
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import * as zod from 'zod';
-import { defineAsyncComponent, nextTick, onMounted, computed, ref, toRaw, watch } from 'vue';
-const datePicker = defineAsyncComponent(() => import('../components/DatePicker.vue'))
 import axios from 'axios';
 import { isMatch } from 'lodash';
 import Swal from 'sweetalert2';
 
 interface Props {
   user_id?: number;
+  user_name?: string;
 }
 
 const props = defineProps<Props>();
@@ -123,8 +113,7 @@ const url = route('staff_employ.index')
 const headers = [
   { title: 'الكلية', key: 'department.college.name' },
   { title: 'القسم', key: 'department.name' },
-  { title: 'الدرجة العلمية', key: 'rank' },
-  { title: 'المسمى الوظيفي', key: 'job_title' },
+  { title: 'المسمى الوظيفي', key: 'grade' },
   { title: '', key: 'actions', sortable: false },
 ];
 
@@ -133,10 +122,8 @@ const table = ref();
 interface FormFields {
   college_id: number;
   department_id: number;
-  job_title: string;
-  job_title_en: string;
-  rank: string;
-  rank_en: string;
+  grade: string;
+  grade_en: string;
   hire_date: any;
   specialty: string;
   subspecialty: string;
@@ -148,11 +135,9 @@ const validationSchema = toTypedSchema(
   zod.object({
     college_id: zod.number({ required_error: "اختر اسم الكلية" }),
     department_id: zod.number({ required_error: "اختر اسم القسم" }),
-    rank: zod.string({ required_error: "اختر الدرجة العلمية" }).min(1, { message: "اختر الدرجة العلمية" }),
-    rank_en: zod.string({ required_error: "اختر الدرجة العلمية بالانجليزية" }).min(1, { message: "اختر الدرجة العلمية بالانجليزية" }),
-    job_title: zod.string({ required_error: "اختر المسمى الوظيفي" }).min(1, { message: "اختر المسمى الوظيفي" }),
-    job_title_en: zod.string({ required_error: "اختر المسمى الوظيفي بالانجليزية" }).min(1, { message: "اختر المسمى الوظيفي بالانجليزية" }),
-    hire_date: zod.coerce.date({ required_error: "اختر تاريخ التعيين", invalid_type_error: "تأكد من تاريخ التعيين" }),
+    grade: zod.string({ required_error: "اختر المسمى الوظيفي" }).min(1, { message: "اختر المسمى الوظيفي" }),
+    grade_en: zod.string({ required_error: "اختر المسمى الوظيفي بالانجليزية" }).min(1, { message: "اختر المسمى الوظيفي بالانجليزية" }),
+    hire_date: zod.any({ required_error: "اختر تاريخ التعيين", invalid_type_error: "تأكد من تاريخ التعيين" }),
     specialty: zod.string().nullish(),
     subspecialty: zod.string().nullish(),
     specialty_en: zod.string().nullish(),
@@ -160,32 +145,24 @@ const validationSchema = toTypedSchema(
   })
 );
 
-const { handleSubmit, resetForm, errors, setValues } = useForm<FormFields>({ validationSchema });
+const { handleSubmit, resetForm, errors, setValues, meta } = useForm<FormFields>({ validationSchema });
+
+const isFormValid = computed(() => {
+  return meta.value.valid && Object.keys(errors.value).length === 0;
+});
 
 const id = ref(-1);
-let colleges = ref([{}]);
+let colleges = shallowRef([{}]);
 let userData = ref([]);
-const departments = ref();
-let ranks = ref<Array<any>>([{ 'id': '', 'name': 'اختر الدرجة العلمية' },
-{ 'id': 'Bachelor', 'name': 'بكالوريوس' },
-{ 'id': 'Master', 'name': 'ماجستير' },
-{ 'id': 'Doctor', 'name': 'دكتوراه' },
-{ 'id': 'Professor', 'name': 'الاستاذ' }]);
+const departments = shallowRef([]);
+let grades = ref<Array<any>>([{ 'id': '', 'name': 'اختر المسمى الوظيفي' },
+{ 'id': 'مساعد تدريس', 'name': 'مساعد تدريس' },
+{ 'id': 'محاضر', 'name': 'محاضر' },
+{ 'id': 'استاذ مساعد', 'name': 'استاذ مساعد' },
+{ 'id': 'استاذ مشارك', 'name': 'استاذ مشارك' },
+{ 'id': 'استاذ', 'name': 'الاستاذ' }]);
 
-let job_titles = ref<Array<any>>([{ 'id': '', 'name': 'اختر المسمى الوظيفي' },
-{ 'id': 'Teaching assistant', 'name': 'مساعد تدريس' },
-{ 'id': 'Lecturer', 'name': 'محاضر' },
-{ 'id': 'Assistant Professor', 'name': 'استاذ مساعد' },
-{ 'id': 'Associate Professor', 'name': 'استاذ مشارك' },
-{ 'id': 'Professor', 'name': 'الاستاذ' }]);
-
-let ranks_en = ref<Array<any>>([{ 'id': '', 'name': 'Select a rank' },
-{ 'id': 'Bachelor', 'name': 'Bachelor' },
-{ 'id': 'Master', 'name': 'Master' },
-{ 'id': 'Doctor', 'name': 'Doctor' },
-{ 'id': 'Professor', 'name': 'Professor' }]);
-
-let job_titles_en = ref<Array<any>>([{ 'id': '', 'name': 'Select a job title' },
+let grades_en = ref<Array<any>>([{ 'id': '', 'name': 'Select a Grade' },
 { 'id': 'Teaching assistant', 'name': 'Teaching assistant' },
 { 'id': 'Lecturer', 'name': 'Lecturer' },
 { 'id': 'Assistant Professor', 'name': 'Assistant Professor' },
@@ -194,7 +171,6 @@ let job_titles_en = ref<Array<any>>([{ 'id': '', 'name': 'Select a job title' },
 
 let currentItem = {};
 const dialog = ref(false);
-const openDialog = ref(false);
 const disableEditButton = ref(false);
 const deartment_disabled = ref(true);
 const SubmitLoading = ref(false);
@@ -202,27 +178,46 @@ const SubmitLoading = ref(false);
 const { value: college_id } = useField('college_id');
 const { value: department_id } = useField('department_id');
 const { value: hire_date } = useField('hire_date');
-const { value: rank } = useField('rank');
-const { value: rank_en } = useField('rank_en');
-const { value: job_title } = useField('job_title');
-const { value: job_title_en } = useField('job_title_en');
+const { value: grade } = useField('grade');
+const { value: grade_en } = useField('grade_en');
 const { value: specialty } = useField('specialty');
 const { value: subspecialty } = useField('subspecialty');
 const { value: specialty_en } = useField('specialty_en');
 const { value: subspecialty_en } = useField('subspecialty_en');
 
+
+
 const save = handleSubmit(async (values) => {
-  values.hire_date = new Date(values.hire_date.toString()).toLocaleDateString('en-US')
-  values = Object.assign(values, { user_id: props.user_id?.toString() });
-  if (id.value > -1 && isMatch(currentItem, values) != true) {
-    await axios.put(url + "/" + id.value, values)
+  SubmitLoading.value = true;
+  try {
+      if (typeof values.hire_date === 'string' && values.hire_date.includes('-')) {
+    values.hire_date = values.hire_date;
+  } else {
+    const d = new Date(values.hire_date);
+    values.hire_date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   }
-  else if (id.value === -1) {
-    await axios.post(url, values);
+    values = Object.assign(values, { user_id: props.user_id?.toString() });
+    if (id.value > -1 && isMatch(currentItem, values) != true) {
+      await axios.put(url + "/" + id.value, values)
+    }
+    else if (id.value === -1) {
+      await axios.post(url, values);
+    }
+    getUserData();
+    Swal.fire({ title: 'تمت العملية بنجاح', icon: 'success', confirmButtonColor: '#198754', confirmButtonText: "موافق", timer: 1500 });
+    close();
+  } catch (error) {
+    console.error("Save failed", error);
+    Swal.fire({
+      title: 'خطأ!',
+      text: 'حدث خطأ أثناء حفظ البيانات',
+      icon: 'error',
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'موافق'
+    });
+  } finally {
+    SubmitLoading.value = false;
   }
-  getUserData();
-  Swal.fire({ title: 'تمت العملية بنجاح', icon: 'success', confirmButtonColor: '#198754', confirmButtonText: "موافق", timer: 1500 });
-  close();
 });
 
 // function editItem(item: any) {
@@ -237,31 +232,31 @@ const save = handleSubmit(async (values) => {
 //   table.value.dialog = true
 // }
 
-function editItem(item: any) {
+async function editItem(item: any) {
   currentItem = item = toRaw(item);
-  disableEditButton.value = !disableEditButton.value;
-  if (disableEditButton.value == true) {
-    id.value = item.id;
-    axios.get(url + '/' + id.value).then(response => {
-      item = response.data.result;
+  id.value = item.id;
+  const collegeId = item.department?.college?.id || item.department?.college_id || '';
+  if (collegeId) {
+    try {
+      const response = await axios.post(route("departments.list"), { college_id: collegeId });
+      departments.value = response.data.departments;
       deartment_disabled.value = false;
-      setValues({
-        department_id: item[0].department_id || '',
-        college_id: item[0].department?.college?.id || '',
-        rank: item[0].rank || '',
-        rank_en: item[0].rank_en || '',
-        job_title: item[0].job_title || '',
-        job_title_en: item[0].job_title_en || '',
-        hire_date: new Date(item[0].hire_date),
-        specialty: item[0].specialty || '',
-        subspecialty: item[0].subspecialty || '',
-        specialty_en: item[0].specialty_en || '',
-        subspecialty_en: item[0].subspecialty_en || ''
-      })
-      disableEditButton.value = false
-      dialog.value = true
-    });
+    } catch (e) {
+      console.error('Error fetching departments on edit:', e);
+    }
   }
+  setValues({
+    department_id: item.department_id || '',
+    college_id: collegeId,
+    grade: item.grade || '',
+    grade_en: item.grade_en || '',
+    hire_date: item.hire_date ? new Date(item.hire_date) : '',
+    specialty: item.specialty || '',
+    subspecialty: item.subspecialty || '',
+    specialty_en: item.specialty_en || '',
+    subspecialty_en: item.subspecialty_en || ''
+  })
+  dialog.value = true;
 }
 
 function deleteItem(id: number) {
@@ -288,6 +283,7 @@ function close() {
   nextTick(() => {
     id.value = -1
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
   });
   dialog.value = false
 }
@@ -295,7 +291,8 @@ function close() {
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 async function getUserData() {
@@ -324,27 +321,29 @@ watch(() => college_id.value, (newVal) => {
   }
 });
 
-watch(() => rank.value, (newVal) => {
-  if (newVal && newVal !== rank_en.value) {
-    rank_en.value = newVal;
+watch(() => grade.value, (newVal) => {
+  if (!newVal) {
+    grade_en.value = '';
+    return;
+  }
+  const idx = grades.value.findIndex(item => item.id === newVal);
+  if (idx !== -1 && grades_en.value[idx]) {
+    if (grade_en.value !== grades_en.value[idx].id) {
+      grade_en.value = grades_en.value[idx].id;
+    }
   }
 });
 
-watch(() => rank_en.value, (newVal) => {
-  if (newVal && newVal !== rank.value) {
-    rank.value = newVal;
+watch(() => grade_en.value, (newVal) => {
+  if (!newVal) {
+    grade.value = '';
+    return;
   }
-});
-
-watch(() => job_title.value, (newVal) => {
-  if (newVal && newVal !== job_title_en.value) {
-    job_title_en.value = newVal;
-  }
-});
-
-watch(() => job_title_en.value, (newVal) => {
-  if (newVal && newVal !== job_title.value) {
-    job_title.value = newVal;
+  const idx = grades_en.value.findIndex(item => item.id === newVal);
+  if (idx !== -1 && grades.value[idx]) {
+    if (grade.value !== grades.value[idx].id) {
+      grade.value = grades.value[idx].id;
+    }
   }
 });
 
@@ -357,7 +356,11 @@ const btnText = computed(() => {
 });
 
 const formTitle = computed(() => {
-  return id.value === -1 ? 'اضافة بيانات' : 'تعديل بيانات'
+  let title = id.value === -1 ? 'اضافة بيانات وظيفية' : 'تعديل البيانات الوظيفية';
+  if (props.user_name) {
+    title += ' لـ ' + props.user_name;
+  }
+  return title;
 });
 
 onMounted(() => {

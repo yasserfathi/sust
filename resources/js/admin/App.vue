@@ -6,8 +6,14 @@
   </v-locale-provider>
 </template>
 
-<script>
-export default {
-  name: 'App',
-};
+<script setup lang="ts">
+defineOptions({
+  name: 'App'
+});
 </script>
+
+<style>
+.v-file-input .v-chip {
+  direction: ltr !important;
+}
+</style>

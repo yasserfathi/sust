@@ -13,24 +13,22 @@
 
                 @foreach ($data['gallery'] as $gallery)
                     <div class="swiper-slide herobannerarea__single__slider"
-                        style="background-image: url('{{ asset($gallery->img) }}');">
+                        style="background-image: url('{{ versioned_asset($gallery->img) }}');">
 
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-xl-9 col-lg-10 col-md-12 col-sm-12 col-12" data-aos="fade-up">
+                        <div class="container h-100">
+                            <div class="row justify-content-center h-100 align-items-center">
+                                <div class="col-xl-9 col-lg-10 col-md-12 col-sm-12 col-12" data-aos="zoom-in" data-aos-duration="1500">
 
-                                    <div class="herobannerarea__content__wraper text-center">
-
+                                    <div class="herobannerarea__content__wraper text-center premium-slider-content">
                                         <div class="herobannerarea__title">
-                                            <div class="herobannerarea__small__title">
+                                            <div class="herobannerarea__small__title responsive-gallery-subtitle">
                                                 <span>جامعة السودان للعلوم والتكنولوجيا</span>
                                             </div>
 
                                             <div class="herobannerarea__title__heading__2 herobannerarea__title__heading__3">
-                                                <h2>{{ $gallery->title }}</h2>
+                                                <h2 class="responsive-gallery-title">{{ $gallery->title }}</h2>
                                             </div>
                                         </div>
-
                                     </div>
 
                                 </div>
@@ -44,263 +42,119 @@
         </div>
 
 
-        {{-- Thumbs Slider --}}
-        <div thumbsSlider class="swiper university__slider__thumb">
-            <div class="swiper-wrapper">
-
-                @foreach ($data['gallery'] as $gallery)
-                    <div class="swiper-slide">
-                        <img loading="lazy" src="{{ asset($gallery->thumb_img) }}" alt="{{ $gallery->title }}">
-                    </div>
-                @endforeach
-
-            </div>
-        </div>
-
-
         {{-- Controls --}}
-        <div class="slider__controls__wrap slider__controls__pagination slider__controls__arrows">
+        <div class="slider__controls__wrap slider__controls__arrows">
             <div class="swiper-button-next arrow-btn"></div>
             <div class="swiper-button-prev arrow-btn"></div>
-            <div class="swiper-pagination"></div>
+        </div>
+
+        {{-- Segmented Progress Bullets & Autoplay Controls --}}
+        <div class="gallery-hero-controls">
+            <div class="gallery-progress-bullets swiper-pagination"></div>
+            <button type="button" class="gallery-pause-btn" aria-label="Pause autoplay" title="إيقاف / تشغيل">
+                <span class="pause-icon">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </span>
+                <span class="play-icon"></span>
+            </button>
         </div>
 
     </div>
     <!-- herobannerarea__section__end-->
-    <div class="populerarea sp_top_80 sp_bottom_50 bg-light">
+    <div class="populerarea sp_top_30 sp_bottom_50 bg-light">
         <div class="container">
-            <div class="row aos-init aos-animate" data-aos="fade-up">
+            <div class="row" data-aos="fade-down" data-aos-duration="1000">
                 <div class="col-12">
                     <div class="section-header mb-4">
                         <span class="sub-title">روابط</span>
-                        <h2 class="section-title"> <span class="highlight">روابط</span> مهمة</h2>
+                        <h2 class="section-title">روابط <span class="highlight">مهمة</span> </h2>
                     </div>
                 </div>
 
             </div>
+
             <div class="row">
-
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-
-                            <i class="icofont-laptop service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
+                <!-- Card 1 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+                    <a href="https://el.sustech.edu" target="_blank" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-laptop"></i>
                         </div>
-                        <div class="service__content">
-                            <h3><a href="https://el.sustech.edu" target="_blank">نظام التعلم الإلكتروني</a>
-                            </h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
+                        <h3>نظام التعلم الإلكتروني</h3>
+                    </a>
                 </div>
 
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-database service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
+                <!-- Card 2 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="200">
+                    <a href="http://repository.sustech.edu/" target="_blank" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-database"></i>
                         </div>
-                        <div class="service__content">
-                            <h3><a href="http://repository.sustech.edu/" target="_blank">المستودعات الرقمية</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-student-alt service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="service__content">
-                            <h3><a href="http://196.1.226.242/student/login" target="_blank">بوابة الطلاب</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-envelope service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="service__content">
-                            <h3><a href="#">فروع الجامعة</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-building service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="service__content">
-                            <h3><a href="https://mail01.sustech.edu/" target="_blank">البريد الالكتروني</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-newspaper service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="service__content">
-                            <h3><a href="{{ URL::to('/ar/news')}}">الاخبار و الاحداث</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-                            <i class="icofont-read-book service__icon"></i>
-
-
-
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="service__content">
-                            <h3><a href="#">المجلات العلمية</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path
-                                    d="M16.5961 10.265L19 1.33069L10.0022 3.73285L1 6.1306L7.59393 12.6627L14.1879 19.1992L16.5961 10.265Z"
-                                    stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                            </svg>
-                        </div>
-                    </div>
+                        <h3>المستودعات الرقمية</h3>
+                    </a>
                 </div>
 
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4 aos-init aos-animate" data-aos="fade-up">
-                    <div class="single__service h-100">
-                        <div class="service__img">
-
-                            <i class="icofont-hat-alt service__icon"></i>
-                            <div class="service__bg__img">
-                                <svg class="service__icon__bg" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                        d="M63.3775 44.4535C54.8582 58.717 39.1005 53.2202 23.1736 47.5697C7.2467 41.9192 -5.18037 32.7111 3.33895 18.4477C11.8583 4.18418 31.6595 -2.79441 47.5803 2.85105C63.5011 8.49652 71.8609 30.2313 63.3488 44.4865L63.3775 44.4535Z"
-                                        fill="#ce6148" fill-opacity="0.05"></path>
-                                </svg>
-                            </div>
+                <!-- Card 3 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="300">
+                    <a href="http://196.1.226.242/student/login" target="_blank" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-student-alt"></i>
                         </div>
-                        <div class="service__content">
-                            <h3><a href="http://196.1.226.111/sustech/r/sust_portal/sust-graduate-studies/open-progs"
-                                    target="_blank">برامج
-                                    كلية الدراسات العليا</a></h3>
-                        </div>
-                        <div class="service__small__img">
-                            <svg class="icon__hover__img" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M22 10v6M2 10l10-5 10 5-10 5z" stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M6 12v5c3 3 9 3 12 0v-5" stroke="#FFB31F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </div>
-                    </div>
+                        <h3>بوابة الطلاب</h3>
+                    </a>
                 </div>
 
+                <!-- Card 4 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="400">
+                    <a href="#" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-building"></i>
+                        </div>
+                        <h3>فروع الجامعة</h3>
+                    </a>
+                </div>
 
+                <!-- Card 5 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="100">
+                    <a href="https://mail01.sustech.edu/" target="_blank" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-envelope"></i>
+                        </div>
+                        <h3>البريد الالكتروني</h3>
+                    </a>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="200">
+                    <a href="{{ URL::to('/ar/news')}}" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-newspaper"></i>
+                        </div>
+                        <h3>الاخبار و الاحداث</h3>
+                    </a>
+                </div>
+
+                <!-- Card 7 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="300">
+                    <a href="#" class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-read-book"></i>
+                        </div>
+                        <h3>المجلات العلمية</h3>
+                    </a>
+                </div>
+
+                <!-- Card 8 -->
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 mb-4" data-aos="fade-up" data-aos-delay="400">
+                    <a href="http://196.1.226.111/sustech/r/sust_portal/sust-graduate-studies/open-progs" target="_blank"
+                        class="premium-link-card h-100">
+                        <div class="premium-icon-wrapper">
+                            <i class="icofont-hat-alt"></i>
+                        </div>
+                        <h3>برامج كلية الدراسات العليا</h3>
+                    </a>
+                </div>
 
             </div>
         </div>
@@ -308,15 +162,16 @@
     <div class="blogarea__2 sp_bottom_20 bg-gradient-primary pt-3">
         <div class="container">
             <div class="row">
-                <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12">
+                <div class="col-xl-5 col-lg-5 col-md-12 col-sm-12 col-12" data-aos="fade-left" data-aos-duration="1200">
                     <div class="about__right__wraper__2">
-                        <div class="educationarea__img">
+                        <div class="educationarea__img position-relative">
                             <img loading="lazy" src="{{ URL::to('images/gallery/vice-chancellor.jpg') }}"
-                                alt="Vice Chancellor">
+                                alt="Vice Chancellor" class="img-fluid rounded shadow-lg"
+                                style="border: 4px solid #fff; box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;">
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-7 col-lg-6" data-aos="fade-up">
+                <div class="col-xl-7 col-lg-6" data-aos="fade-right" data-aos-duration="1200" data-aos-delay="200">
                     <div class="aboutarea__content__wraper ps-lg-5">
                         <div class="section-header mb-4">
                             <span class="sub-title">رسالة الترحيب</span>
@@ -347,7 +202,7 @@
     <div class="blogarea__2 sp_bottom_20 bg-light pt-3">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-xl-8 text-center" data-aos="fade-up">
+                <div class="col-xl-8 text-center" data-aos="zoom-in" data-aos-duration="1000">
                     <div class="section-header mb-1">
                         <span class="sub-title">هويتنا</span>
                         <h2 class="section-title">عن <span class="highlight">الجامعة</span></h2>
@@ -372,7 +227,6 @@
 
                     </ul>
                 </div>
-
 
 
                 <div class="tab-content tab__content__wrapper" id="myTabContent" data-aos="fade-up">
@@ -434,7 +288,7 @@
     <div class="counterarea sp_bottom_40 sp_top_40">
         <div class="container">
             <div class="row">
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="fade-up">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="flip-up" data-aos-duration="1000">
                     <div class="counterarea__text__wraper">
                         <div class="counter__img">
                             <i class="icofont-location-pin" style="font-size: 3em"></i>
@@ -447,7 +301,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="fade-up">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="flip-up" data-aos-duration="1000">
                     <div class="counterarea__text__wraper">
                         <div class="counter__img">
                             <i class="icofont-graduate-alt" style="font-size: 3em"></i>
@@ -460,7 +314,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="fade-up">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="flip-up" data-aos-duration="1000">
                     <div class="counterarea__text__wraper">
                         <div class="counter__img">
                             <i class="icofont-university" style="font-size: 3em"></i>
@@ -473,7 +327,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="fade-up">
+                <div class="col-xl-3 col-lg-3 col-md-6 col-sm-6 col-12" data-aos="flip-up" data-aos-duration="1000">
                     <div class="counterarea__text__wraper">
                         <div class="counter__img">
                             <i class="icofont-university" style="font-size: 3em"></i>
@@ -492,7 +346,7 @@
     <!-- counter__section__end -->
     <div class="blogarea sp_bottom_40 sp_top_20">
         <div class="container">
-            <div class="row" data-aos="fade-up">
+            <div class="row">
                 <div class="row justify-content-center">
                     <div class="col-xl-8 text-center" data-aos="fade-up">
                         <div class="section-header mb-1">
@@ -503,22 +357,24 @@
                 </div>
             </div>
             <div class="row">
-                <div class="col-xl-8 col-lg-8" data-aos="fade-up">
-                    <div class="blogarea__content__wraper">
+                <div class="col-xl-8 col-lg-8" data-aos="fade-left" data-aos-duration="1200">
+                    <div class="blogarea__content__wraper h-100 d-flex flex-column shadow-sm rounded-4 overflow-hidden bg-white" style="transition: 0.3s; margin-bottom: 0;">
                         @php
                             \Carbon\Carbon::setLocale('ar');
                         @endphp
 
                         @if (isset($data['news'][0]) && $data['news'][0]->photos->isNotEmpty())
                                             <div class="blogarea__img">
-                                                <img loading="lazy" src="{{ URL::to($data['news'][0]->photos[0]->img) }}"
-                                                    alt="{{ $data['news'][0]->title }}">
-                                                <div class="blogarea__date">
+                                                <a href="{{ url('/ar/news/details/' . $data['news'][0]->slug) }}">
+                                                    <img loading="lazy" src="{{ URL::to($data['news'][0]->photos[0]->img) }}"
+                                                        alt="{{ $data['news'][0]->title }}" style="width: 100%; height: 450px; object-fit: cover;">
+                                                </a>
+                                                <div class="blogarea__date text-white" style="color: #fff !important;">
                                                     {{ Carbon\Carbon::parse($data['news'][0]->news_date)->day}}
-                                                    <span>{{ Carbon\Carbon::parse($data['news'][0]->news_date)->translatedFormat('M')}}</span>
+                                                    <span style="color: #fff !important;">{{ Carbon\Carbon::parse($data['news'][0]->news_date)->translatedFormat('M Y')}}</span>
                                                 </div>
                                             </div>
-                                            <div class="blogarea__text__wraper">
+                                            <div class="blogarea__text__wraper flex-grow-1 d-flex flex-column justify-content-between p-4">
                                                 <h3><a
                                                         href="{{ url('/ar/news/details/' . $data['news'][0]->slug) }}">{{ $data['news'][0]->title }}</a>
                                                 </h3>
@@ -536,17 +392,17 @@
                                                     <div class="blogarea__list">
                                                         <ul>
                                                             <li>
-                                                                <a href="https://www.facebook.com/sharer/sharer.php?u={{ url('/ar/news/details/' . $data['news'][0]->slug) }}&quote={{ urlencode($data['news'][0]->title) }}"
-                                                                    target="_blank" class="facebook-share-button">
+                                                                <a href="{{ 'https://www.facebook.com/sharer/sharer.php?' . http_build_query(['u' => url('/ar/news/details/' . $data['news'][0]->slug), 'quote' => $data['news'][0]->title]) }}"
+                                                                    target="_blank" rel="noopener noreferrer" class="facebook-share-button">
                                                                     <i class="icofont-facebook"></i>
                                                                 </a>
                                                             </li>
                                                             <li>
                                                                 <a href="{{ 'https://twitter.com/intent/tweet?' . http_build_query([
-                                'url' => url('/ar/news/details/' . $data['news'][0]->slug),
-                                'text' => $data['news'][0]->title,
-                                'hashtags' => 'Sudan University of Science and Technology'
-                            ]) }}" target="_blank" rel="noopener noreferrer">
+                                 'url' => url('/ar/news/details/' . $data['news'][0]->slug),
+                                 'text' => $data['news'][0]->title,
+                                 'hashtags' => 'SUST,SudanUniversity'
+                             ]) }}" target="_blank" rel="noopener noreferrer">
                                                                     <i class="icofont-twitter"></i>
                                                                 </a>
                                                             </li>
@@ -557,16 +413,18 @@
                         @endif
                     </div>
                 </div>
-                <div class="col-xl-4 col-lg-4" data-aos="fade-up">
+                <div class="col-xl-4 col-lg-4 d-flex flex-column" style="gap: 24px;" data-aos="fade-right" data-aos-duration="1200" data-aos-delay="200">
 
-                    <div class="blogarea__content__wraper">
+                    <div class="blogarea__content__wraper m-0 h-100 d-flex flex-column shadow-sm rounded-4 overflow-hidden bg-white" style="transition: 0.3s;">
                         @if (isset($data['news'][1]) && $data['news'][1]->photos->isNotEmpty())
                             <div class="blogarea__img">
-                                <img loading="lazy" src="{{ URL::to($data['news'][1]->photos[0]->img) }}"
-                                    alt="{{ $data['news'][1]->title }}">
-                                <div class="blogarea__date small__date">
+                                <a href="{{ url('/ar/news/details/' . $data['news'][1]->slug) }}">
+                                    <img loading="lazy" src="{{ URL::to($data['news'][1]->photos[0]->img) }}"
+                                        alt="{{ $data['news'][1]->title }}" style="width: 100%; height: 210px; object-fit: cover;">
+                                </a>
+                                <div class="blogarea__date small__date text-white" style="color: #fff !important;">
                                     {{ Carbon\Carbon::parse($data['news'][1]->news_date)->day}}
-                                    <span>{{ Carbon\Carbon::parse($data['news'][1]->news_date)->translatedFormat('M')}}</span>
+                                    <span style="color: #fff !important;">{{ Carbon\Carbon::parse($data['news'][1]->news_date)->translatedFormat('M Y')}}</span>
                                 </div>
                             </div>
                             <div class="blogarea__text__wraper blogarea__text__wraper__2">
@@ -577,14 +435,16 @@
                         @endif
                     </div>
 
-                    <div class="blogarea__content__wraper">
+                    <div class="blogarea__content__wraper m-0 h-100 d-flex flex-column shadow-sm rounded-4 overflow-hidden bg-white" style="transition: 0.3s;">
                         @if (isset($data['news'][2]) && $data['news'][2]->photos->isNotEmpty())
                             <div class="blogarea__img">
-                                <img loading="lazy" src="{{ URL::to($data['news'][2]->photos[0]->img) }}"
-                                    alt="{{ $data['news'][2]->title }}">
-                                <div class="blogarea__date small__date">
+                                <a href="{{ url('/ar/news/details/' . $data['news'][2]->slug) }}">
+                                    <img loading="lazy" src="{{ URL::to($data['news'][2]->photos[0]->img) }}"
+                                        alt="{{ $data['news'][2]->title }}" style="width: 100%; height: 210px; object-fit: cover;">
+                                </a>
+                                <div class="blogarea__date small__date text-white" style="color: #fff !important;">
                                     {{ Carbon\Carbon::parse($data['news'][2]->news_date)->day}}
-                                    <span>{{ Carbon\Carbon::parse($data['news'][2]->news_date)->translatedFormat('M')}}</span>
+                                    <span style="color: #fff !important;">{{ Carbon\Carbon::parse($data['news'][2]->news_date)->translatedFormat('M Y')}}</span>
                                 </div>
                             </div>
                             <div class="blogarea__text__wraper blogarea__text__wraper__2">
@@ -601,21 +461,20 @@
                         <a class="default__button w-100" href="{{ url('/ar/news') }}">المزيد من الأخبار</a>
                     </div>
                 </div>
+                @if(isset($data['ads']) && $data['ads']->isNotEmpty())
                 <hr class="col-xl-12 my-3" style="padding: 4px 0">
+                @endif
             </div>
         </div>
     </div>
+    @if(isset($data['ads']) && $data['ads']->isNotEmpty())
     <div class="blogarea__2 sp_top_20 bg-light pt-3">
         <div class="container">
             <div class="row">
                 <div class="col-xl-12" data-aos="fade-up">
-                    <div class="section__title text-center">
-                        <div class="section__title__button">
-                            <div class="default__small__button">الفعاليات</div>
-                        </div>
-                        <div class="section__title__heading heading__underline">
-                            <h2>الإعلانات والأحداث</h2>
-                        </div>
+                    <div class="section-header mb-4 text-center">
+                        <span class="sub-title">الفعاليات</span>
+                        <h2 class="section-title">الإعلانات <span class="highlight">والأحداث</span></h2>
                     </div>
                 </div>
             </div>
@@ -624,11 +483,20 @@
 
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 col-12" data-aos="fade-up">
                         <div class="single__blog__wraper">
-                            @if ($ad->photos->isNotEmpty())
-                                <div class="single__blog__img">
-                                    <img loading="lazy" src="{{ URL::to($ad->photos[0]->img) }}" alt="{{ $ad->title }}">
-                                </div>
-                            @endif
+                            @php
+                                $adHomeImg = $ad->photos->first()?->img ?? $ad->photos->first()?->thumb_img;
+                                if (!$adHomeImg && !empty($ad->file)) {
+                                    $ext = strtolower(pathinfo($ad->file, PATHINFO_EXTENSION));
+                                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+                                        $adHomeImg = $ad->file;
+                                    }
+                                }
+                            @endphp
+                            <div class="single__blog__img">
+                                <a href="{{ url('/ar/ads/details/' . $ad->slug) }}">
+                                    <img loading="lazy" src="{{ $adHomeImg ? URL::to($adHomeImg) : URL::to('images/logos/1840372294400317.png') }}" alt="{{ $ad->title }}">
+                                </a>
+                            </div>
                             <div class="single__blog__content">
                                 <p>{{ Carbon\Carbon::parse($ad->ad_date)->translatedFormat('j F Y') }}</p>
                                 <h6> <a href="{{ url('/ar/ads/details/' . $ad->slug) }}"
@@ -651,4 +519,5 @@
             </div>
         </div>
     </div>
+    @endif
 @endsection

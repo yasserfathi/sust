@@ -16,6 +16,7 @@ class UserUploadFileController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'college_id' => 'required|exists:colleges,id',
             'file' => 'required|file|mimes:csv,txt,xlsx,xls'
         ]);
 
@@ -27,9 +28,10 @@ class UserUploadFileController extends Controller
                     $extension = $file->getClientOriginalExtension();
                     $filename = 'users-upload-list.' . $extension;
                     $file->storeAs('files', $filename, 'public');
-                    $filePath = public_path('files/' . $filename);
+                    $filePath = storage_path('app/public/files/' . $filename);
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -69,7 +71,7 @@ class UserUploadFileController extends Controller
         $hasEmail = in_array('البريد الإلكتروني', $fileColumns) || in_array('البريد الالكتروني', $fileColumns) || in_array('الايميل', $fileColumns) || in_array('الإيميل', $fileColumns);
         $hasCollege = in_array('الكلية', $fileColumns);
         $hasDept = in_array('القسم', $fileColumns);
-        $hasDegree = in_array('الدرجة العلمية', $fileColumns);
+
         $hasTitle = in_array('المسمى الوظيفي', $fileColumns);
 
         $missingSemantic = [];
@@ -79,13 +81,13 @@ class UserUploadFileController extends Controller
         if (!$hasEmail) $missingSemantic[] = 'البريد الإلكتروني';
         if (!$hasCollege) $missingSemantic[] = 'الكلية';
         if (!$hasDept) $missingSemantic[] = 'القسم';
-        if (!$hasDegree) $missingSemantic[] = 'الدرجة العلمية';
+
         if (!$hasTitle) $missingSemantic[] = 'المسمى الوظيفي';
 
         if (count($missingSemantic) > 0) {
             return response()->json([
                 'message' => 'يوجد أعمدة مفقودة في الملف: ' . implode('، ', $missingSemantic),
-                'accepted_columns' => ['الرقم الجامعي', 'الاسم', 'الاسم بالانجليزي', 'الكلية', 'القسم', 'الدرجة العلمية', 'المسمى الوظيفي', 'البريد الإلكتروني'],
+                'accepted_columns' => ['الرقم الجامعي', 'الاسم', 'الاسم بالانجليزي', 'الكلية', 'القسم', 'المسمى الوظيفي', 'البريد الإلكتروني'],
                 'status' => 422
             ], 422);
         }
@@ -100,35 +102,79 @@ class UserUploadFileController extends Controller
         if (count($invalidColumns) > 0) {
             return response()->json([
                 'message' => 'يوجد أعمدة غير معتمدة في الملف: ' . implode('، ', $invalidColumns),
-                'accepted_columns' => ['الرقم الجامعي', 'الاسم', 'الاسم بالانجليزي', 'الكلية', 'القسم', 'الدرجة العلمية', 'المسمى الوظيفي', 'البريد الإلكتروني'],
+                'accepted_columns' => ['الرقم الجامعي', 'الاسم', 'الاسم بالانجليزي', 'الكلية', 'القسم', 'المسمى الوظيفي', 'البريد الإلكتروني'],
                 'status' => 422
             ], 422);
         }
 
+        // Soft delete all users and staff in the given college before processing the file
+        $departmentsInCollege = Department::where('college_id', $request->college_id)->pluck('id');
+        $staffUserIds = StaffEmploy::whereIn('department_id', $departmentsInCollege)->pluck('user_id');
+        User::whereIn('id', $staffUserIds)->update(['active' => 0]);
+        User::whereIn('id', $staffUserIds)->delete();
+        StaffEmploy::whereIn('department_id', $departmentsInCollege)->delete();
+
         $success_records = [];
         $failed_records = [];
+
+        // Pre-fetch departments to avoid N+1 queries
+        $departments = Department::where('college_id', $request->college_id)->get()->keyBy('name');
+
+        // Pre-fetch all users to avoid N+1 queries
+        $allEmails = [];
+        $allUnivNos = [];
+        $processedRecords = [];
 
         foreach ($records as $originalRecord) {
             $record = [];
             foreach ($originalRecord as $key => $value) {
                 $record[$trimUnicode($key)] = $value;
             }
+            $processedRecords[] = $record;
 
+            $email = isset($record['البريد الإلكتروني']) ? $trimUnicode($record['البريد الإلكتروني']) : (isset($record['البريد الالكتروني']) ? $trimUnicode($record['البريد الالكتروني']) : (isset($record['الايميل']) ? $trimUnicode($record['الايميل']) : (isset($record['الإيميل']) ? $trimUnicode($record['الإيميل']) : '')));
+            $univNo = isset($record['الرقم الجامعي']) ? $trimUnicode($record['الرقم الجامعي']) : (isset($record['رقم الجامعي']) ? $trimUnicode($record['رقم الجامعي']) : (isset($record['رقم جامعي']) ? $trimUnicode($record['رقم جامعي']) : ''));
+            
+            if ($email != '') $allEmails[] = $email;
+            if ($univNo != '') $allUnivNos[] = $univNo;
+        }
+
+        $existingUsersByUnivNo = User::withTrashed()->whereIn('univ_no', $allUnivNos)->get()->keyBy('univ_no');
+        $existingUsersByEmail = User::withTrashed()->whereIn('email', $allEmails)->get()->keyBy('email');
+
+        $allUserIds = $existingUsersByUnivNo->pluck('id')->merge($existingUsersByEmail->pluck('id'))->unique();
+        $existingStaff = StaffEmploy::withTrashed()->whereIn('user_id', $allUserIds)->get()->keyBy('user_id');
+
+        foreach ($processedRecords as $record) {
             $email = isset($record['البريد الإلكتروني']) ? $trimUnicode($record['البريد الإلكتروني']) : (isset($record['البريد الالكتروني']) ? $trimUnicode($record['البريد الالكتروني']) : (isset($record['الايميل']) ? $trimUnicode($record['الايميل']) : (isset($record['الإيميل']) ? $trimUnicode($record['الإيميل']) : '')));
             $univNo = isset($record['الرقم الجامعي']) ? $trimUnicode($record['الرقم الجامعي']) : (isset($record['رقم الجامعي']) ? $trimUnicode($record['رقم الجامعي']) : (isset($record['رقم جامعي']) ? $trimUnicode($record['رقم جامعي']) : ''));
             $name = isset($record['الاسم']) ? $trimUnicode($record['الاسم']) : '';
             
             if ($email != '' && $univNo != '') {
+                if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $failed_records[] = ['name' => $name, 'univ_no' => $univNo, 'reason' => 'صيغة البريد الإلكتروني غير صحيحة'];
+                    continue;
+                }
+                
                 try {
-                    $user = User::where('univ_no', $univNo)->first();
-                    
-                    if (!$user) {
-                        // Check if email already exists to prevent unique constraint violation
-                        if (User::where('email', $email)->exists()) {
-                            $failed_records[] = ['name' => $name, 'univ_no' => $univNo, 'reason' => 'البريد الإلكتروني مستخدم مسبقاً لمستخدم آخر'];
+                    $departmentName = isset($record['القسم']) ? $trimUnicode($record['القسم']) : '';
+                    $department = null;
+                    if ($departmentName != '') {
+                        $department = $departments->get($departmentName);
+                        
+                        if (!$department) {
+                            $failed_records[] = ['name' => $name, 'univ_no' => $univNo, 'reason' => 'القسم (' . $departmentName . ') غير مسجل مسبقاً في النظام'];
                             continue;
                         }
-                        
+                    }
+
+                    $user = $existingUsersByUnivNo->get($univNo);
+                    
+                    if (!$user) {
+                        $user = $existingUsersByEmail->get($email);
+                    }
+
+                    if (!$user) {
                         $user = new User;
                         $user->univ_no = $univNo;
                         $user->password = Hash::make($email);
@@ -139,30 +185,32 @@ class UserUploadFileController extends Controller
                         $user->phone = '';
                         $user->img = '';
                     } else {
-                        // Prevent changing email to an already taken email by another user
-                        if ($user->email != $email && User::where('email', $email)->exists()) {
-                            $failed_records[] = ['name' => $name, 'univ_no' => $univNo, 'reason' => 'البريد الإلكتروني الجديد الذي تحاول تحديثه مستخدم مسبقاً لمستخدم آخر'];
-                            continue;
+                        if ($user->trashed()) {
+                            $user->restore();
+                        }
+                        $user->active = 1;
+                        
+                        // Fallback logic in case DB exists check was used.
+                        if ($user->univ_no != $univNo && $existingUsersByUnivNo->has($univNo)) {
+                            $univNo = $user->univ_no;
+                        }
+                        
+                        if ($user->email != $email && $existingUsersByEmail->has($email)) {
+                            $email = $user->email;
                         }
                     }
 
                     $user->name = $name;
                     $user->name_en = isset($record["الاسم بالانجليزي"]) ? $trimUnicode($record["الاسم بالانجليزي"]) : (isset($record["الاسم بالإنجليزي"]) ? $trimUnicode($record["الاسم بالإنجليزي"]) : '');
                     $user->email = $email;
+                    $user->univ_no = $univNo;
                     $user->save();
 
-                    $departmentName = isset($record['القسم']) ? $trimUnicode($record['القسم']) : '';
-                    $department = null;
-                    if ($departmentName != '') {
-                        $department = Department::where('name', $departmentName)->first();
-                        
-                        if (!$department) {
-                            $failed_records[] = ['name' => $name, 'univ_no' => $univNo, 'reason' => 'القسم (' . $departmentName . ') غير مسجل مسبقاً في النظام'];
-                            continue;
-                        }
-                    }
+                    // Update local cache so we don't insert again in this loop
+                    $existingUsersByUnivNo->put($user->univ_no, $user);
+                    $existingUsersByEmail->put($user->email, $user);
 
-                    $staff_employs = StaffEmploy::where('user_id', $user->id)->first();
+                    $staff_employs = $existingStaff->get($user->id);
                     if (!$staff_employs) {
                         $staff_employs = new StaffEmploy;
                         $staff_employs->user_id = $user->id;
@@ -173,11 +221,31 @@ class UserUploadFileController extends Controller
                         $staff_employs->specialty_en = '';
                         $staff_employs->subspecialty_en = '';
                         $staff_employs->created_at = \Carbon\Carbon::now()->toDateTimeString();
+                    } else {
+                        if ($staff_employs->trashed()) {
+                            $staff_employs->restore();
+                        }
                     }
 
                     $staff_employs->department_id = $department ? $department->id : null;
-                    $staff_employs->job_title = isset($record['المسمى الوظيفي']) ? $trimUnicode($record['المسمى الوظيفي']) : '';
-                    $staff_employs->rank = isset($record['الدرجة العلمية']) ? $trimUnicode($record['الدرجة العلمية']) : '';
+                    $job_title = isset($record['المسمى الوظيفي']) ? $trimUnicode($record['المسمى الوظيفي']) : '';
+                    if ($job_title === 'مساعد تدريس ج') {
+                        $job_title = 'مساعد تدريس';
+                    }
+
+                    $staff_employs->grade = $job_title;
+
+                    $translations = [
+                        'الاستاذ' => 'Professor',
+                        'استاذ' => 'Professor',
+                        'استاذ مشارك' => 'Associate Professor',
+                        'استاذ مساعد' => 'Assistant Professor',
+                        'محاضر' => 'Lecturer',
+                        'مساعد تدريس' => 'Teaching Assistant',
+                        'مساعد تدريس ج' => 'Teaching Assistant',
+                    ];
+                    $staff_employs->grade_en = $translations[$job_title] ?? null;
+
                     $staff_employs->save();
 
                     $success_records[] = ['name' => $name, 'univ_no' => $univNo];

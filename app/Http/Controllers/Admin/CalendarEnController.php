@@ -14,57 +14,55 @@ class CalendarEnController extends Controller
 {
     public function index(Request $request)
     {
-        $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        $itemsPerPage = (int) htmlspecialchars($request->get('items') ?? 15);
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
 
         $search = htmlspecialchars($request->get('search') ?? '');
 
-        $select_fileds = ['id', 'college_id', 'year', 'file'];
-
-        //collection serach Calendr year
-        $result_calendar_year = Calendar::select($select_fileds)
-            ->whereHas('college')->with('college:id,name')->where('lang', 2);
+        $query = Calendar::select('calendars.id', 'calendars.college_id', 'calendars.year', 'calendars.file')
+            ->whereHas('college')
+            ->with('college:id,name')
+            ->where('calendars.lang', 2);
 
         if (!empty($search)) {
-            $result_calendar_year->where('year', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($search) {
+                $q->where('calendars.year', 'like', '%' . $search . '%')
+                  ->orWhereHas('college', function ($cq) use ($search) {
+                      $cq->where('name', 'like', '%' . $search . '%');
+                  });
+            });
         }
 
-        if (Auth::user()->role == 3) {
-            $result_calendar_year->where('user_id', Auth::user()->id);
+        $authUser = Auth::user();
+        if ($authUser->role == 3 || $authUser->role == 2) {
+            if ($authUser->is_college_rep) {
+                $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                $query->where('calendars.college_id', $collegeId);
+            } else if ($authUser->role == 3) {
+                $query->where('calendars.user_id', $authUser->id);
+            } else {
+                // For role 2 who is not a rep, filter by their colleges
+                $query->whereHas('college', function ($q) use ($authUser) {
+                    $q->where('user_id', $authUser->id);
+                });
+            }
         }
 
-        // ===================================
+        if ($request->has('orderby') && $request->has('ascend')) {
+            $orderBy = $request->get('orderby');
+            $sortDirection = ($request->get('ascend') === 'true' || $request->get('ascend') === 'asc' || $request->get('ascend') == '1') ? 'asc' : 'desc';
 
-        //collection serach college name
-
-        $result_college_name = Calendar::select($select_fileds)
-            ->whereHas(
-                'college',
-                function ($query) use ($search) {
-                    if (!empty($search)) {
-                        $query->where('name', 'like', '%' . $search . '%');
-                    }
-                },
-            )->with('college:id,name')->where('lang', 2);
-
-        if (Auth::user()->role == 3) {
-            $result_college_name->where('user_id', Auth::user()->id);
+            if ($orderBy === 'college.name') {
+                $query->join('colleges', 'colleges.id', '=', 'calendars.college_id')
+                      ->orderBy('colleges.name', $sortDirection);
+            } else {
+                $query->orderBy('calendars.' . ltrim($orderBy, 'calendars.'), $sortDirection);
+            }
         }
 
-        $all = $result_calendar_year->get()->merge($result_college_name->get());
-
-        if ($request->exists('orderby') && $request->exists('ascend')) {
-            $all = $all->sortBy([[$request->get('orderby'), $request->get('ascend')]]);
-        }
-
-        if ($itemsPerPage == 0) {
-            $itemsPerPage = count($all);
-        }
-
-        return response()->json(['result' => $all->paginate((int)$itemsPerPage)], 200);
+        return response()->json(['result' => $query->paginate($itemsPerPage)], 200);
     }
 
     public function show(Calendar $calendar_en)
@@ -93,6 +91,7 @@ class CalendarEnController extends Controller
                 $imagename = $rand . '.' . $file->getClientOriginalExtension();
                 $file_path = $file->storeAs('files', $imagename, 'public');
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
 
@@ -115,12 +114,13 @@ class CalendarEnController extends Controller
                     $file = $request->file('file');
                     $rand = hexdec(uniqid());
                     $imagename = $rand . '.' . $file->getClientOriginalExtension();
-                    if (Str::length($file_path) > 0 && file_exists(public_path($file_path))) {
-                        unlink($file_path);
+                    if(Str::length($file_path) > 0 && file_exists(public_path($file_path))) {
+                        unlink(public_path($file_path));
                     }
                     $file_path = $file->storeAs('files', $imagename, 'public');
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -136,13 +136,12 @@ class CalendarEnController extends Controller
         }
     }
 
-    public function destroy(Calendar $calendar_en)
+    public function destroy(Calendar $calendar)
     {
-        $data = Calendar::find($calendar_en->id);
-        if (Str::length($data->file) > 0 && file_exists(public_path($data->file))) {
-            unlink($data->file);
+        if(Str::length($calendar->file) > 0 && file_exists(public_path($calendar->file))) {
+            unlink(public_path($calendar->file));
         }
-        $data->delete();
+        $calendar->delete();
         return response()->json(['message' => 'deleted', 'status' => 200]);
     }
 }

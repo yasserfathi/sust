@@ -10,16 +10,18 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('student_data', function (Blueprint $table) {
-            $table->id();
-            $table->string('university_number')->unique();
-            $table->string('full_name');
-            $table->string('college');
-            $table->string('department');
-            $table->string('semester');
-            $table->string('academic_year');
-            $table->timestamps();
-        });
+        if (!Schema::hasTable('student_data')) {
+            Schema::create('student_data', function (Blueprint $table) {
+                $table->id();
+                $table->string('university_number')->unique();
+                $table->string('full_name');
+                $table->string('college');
+                $table->string('department');
+                $table->string('semester');
+                $table->string('academic_year');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

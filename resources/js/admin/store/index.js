@@ -86,6 +86,14 @@ export const useAuthStore = defineStore('auth', {
 
         this.initialized = true;
 
+        if (response.data && response.data.force_password_change !== undefined) {
+            this.user.force_password_change = response.data.force_password_change;
+        }
+
+        if (this.user && this.user.force_password_change) {
+          return { success: true, requires_password_change: true };
+        }
+
         const redirectUrl = localStorage.getItem('redirectUrl');
         localStorage.removeItem('redirectUrl');
 
@@ -95,6 +103,8 @@ export const useAuthStore = defineStore('auth', {
         } else {
           router.push('/dashboard').catch(() => { });
         }
+        
+        return { success: true, requires_password_change: false };
       } catch (error) {
         this.clearAuth();
         this.error = error.response?.data?.message || error.message;
@@ -105,15 +115,19 @@ export const useAuthStore = defineStore('auth', {
 
     async logout() {
       try {
-        await axios.post(route('logout'), {}, {
-          headers: { Authorization: this.authHeader }
-        });
+        if (this.authToken) {
+          await axios.post(route('logout'), {}, {
+            headers: { Authorization: this.authHeader }
+          });
+        }
       } catch (error) {
-        console.error('Logout error:', error);
+        console.warn('Backend logout response:', error);
       } finally {
         this.clearAuth();
         const { default: router } = await import('../router');
-        await router.push({ name: 'Login' });
+        if (router.currentRoute.value.name !== 'Login') {
+          await router.push({ name: 'Login' }).catch(() => {});
+        }
       }
     },
 

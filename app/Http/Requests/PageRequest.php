@@ -53,7 +53,7 @@ class PageRequest extends FormRequest
             ],
 
             'keywords' => ['required', 'string', 'max:255'],
-            'detail_portion' => ['required', 'string'],
+            'detail_portion' => ['required', 'string', 'max:255'],
             'detail' => ['required', 'string'],
 
             // Rationale: استخدام الـ Validation المدمج للـ Mimes والـ Max size لضمان أمن المرفقات.

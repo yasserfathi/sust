@@ -1,4 +1,7 @@
-@extends('staff/layout')
+@extends('staff.layout')
+
+@section('title', 'Scientific Papers')
+
 
 @section('content')
     <!-- Hero Section -->
@@ -13,7 +16,7 @@
                         </h1>
                         <nav aria-label="breadcrumb">
                             <ol class="breadcrumb justify-content-center mb-0" data-aos="fade-up" data-aos-delay="300">
-                                <li class="breadcrumb-item"><a href="{{ route('staff_home', $user?->name_en ?? '') }}"
+                                <li class="breadcrumb-item"><a href="{{ route('staff_home', $user?->slug ?? '') }}"
                                         class="text-secondary text-decoration-none">Home</a></li>
                                 <li class="breadcrumb-item active text-muted" aria-current="page">Scientific papers</li>
                             </ol>
@@ -35,7 +38,7 @@
                 <div class="bg-white p-4 p-md-5 rounded-3 shadow-sm mb-4">
                     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
                         <h3 class="section-header m-0">Scientific papers</h3>
-                        <a href="{{ route('staff_home', $user?->name_en ?? '') }}"
+                        <a href="{{ route('staff_home', $user?->slug ?? '') }}"
                             class="text-primary text-decoration-none fw-bold text-nowrap">
                             <i class="icofont-arrow-right"></i> Home
                         </a>
@@ -45,7 +48,6 @@
                         <div class="pub-card d-flex gap-3 mb-4 align-items-start">
                             <div class="flex-grow-1">
                                 <h5 class="fw-bold mb-2">{{ $paper->item_val }}</h5>
-                                <p class="text-muted small mb-2">{{ $paper->created_at?->format('Y-m-d') }}</p>
                             </div>
                         </div>
                     @empty

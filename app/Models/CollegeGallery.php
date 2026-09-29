@@ -29,4 +29,19 @@ class CollegeGallery extends Model implements Auditable
     {
         return $this->belongsTo(College::class);
     }
+
+    protected static function booted()
+    {
+        static::saved(function ($gallery) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::deleted(function ($gallery) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::restored(function ($gallery) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+    }
 }

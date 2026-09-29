@@ -15,23 +15,23 @@ class CollegesController extends Controller
     public function index(Request $request)
     {
         $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
-        if ($itemsPerPage < 0) {
-            $itemsPerPage = 0;
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
         }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
         $data = College::select('id', 'name', 'name_en', 'slug', 'college_type', 'active');
 
         if (!empty($search)) {
-            $data->where('name', 'like', '%' . $search . '%')
-                ->orWhere('name_en', 'like', '%' . $search . '%')
+            $data->whereRaw('MATCH(name, name_en) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
                 ->orWhere('college_type', 'like', '%' . $search . '%');
         }
 
         if (!$request->exists('orderby') && !empty($request->get('ascend'))) {
-            $data->orderBy($request->get('orderby'), $request->get('ascend'));
+            $data->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
         } else {
-            $data->orderBy('id', 'desc');
+            $data->orderByDesc('id');
         }
 
         $resource = $data->paginate((int) $itemsPerPage);
@@ -64,6 +64,7 @@ class CollegesController extends Controller
 
                 $logo_path = 'images/logos/' . $imagename;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
         if ($request->hasFile('logo_en') && $request->file('logo_en')->isValid()) {
@@ -76,6 +77,7 @@ class CollegesController extends Controller
 
                 $logo_en_path = 'images/logos/' . $imagename;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
         if ($request->hasFile('banner') && $request->file('banner')->isValid()) {
@@ -88,6 +90,7 @@ class CollegesController extends Controller
 
                 $banner_path = 'images/banners/' . $imagename;
             } catch (Exception $e) {
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
             }
         }
         $active = 0;
@@ -127,7 +130,8 @@ class CollegesController extends Controller
                         unlink(public_path($record->logo));
                     }
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -143,7 +147,8 @@ class CollegesController extends Controller
                         unlink(public_path($record->logo_en));
                     }
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -159,7 +164,8 @@ class CollegesController extends Controller
                         unlink(public_path($record->banner));
                     }
                 } catch (Exception $e) {
-                }
+                return response()->json(['message' => 'Error processing file: ' . $e->getMessage(), 'status' => 500], 500);
+            }
             }
         }
 
@@ -192,9 +198,23 @@ class CollegesController extends Controller
         $query = College::select('id', 'name')->where('active', '1');
 
         if ($user && $user->role != 1) {
-            $query->whereHas('departments.staff', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
+            if ($user->is_college_rep) {
+                $collegeId = $user->staff_latest_by_id?->department?->college_id;
+                if ($collegeId) {
+                    $query->where('id', $collegeId);
+                } else {
+                    $query->whereRaw('1 = 0');
+                }
+            } else {
+                // If they are not a rep, fallback to their assigned colleges (or whatever previous logic they had)
+                // The previous logic was:
+                // $query->whereHas('departments.staff', function ($q) use ($user) {
+                //     $q->where('user_id', $user->id);
+                // });
+                // But NewsController used `$query->where('user_id', $user->id);`
+                // Let's stick to what NewsController does for `category`/`user_id` on colleges.
+                $query->where('user_id', $user->id);
+            }
         }
 
         $data = $query->get()->makeVisible(['id']);

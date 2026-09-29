@@ -1,10 +1,13 @@
 @extends('ar/college/layout')
 
+@section('title', 'أرشيف الأخبار')
+
+
 @section('content')
     <div class="breadcrumbarea" @if (isset($data['banner']) && $data['banner'])
-        style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
+        style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
     @else
-            style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
+            style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
         @endif>
         <div class="container">
             <div class="row">
@@ -40,7 +43,7 @@
                                         @if(isset($news->photos) && isset($news->photos[0]))
                                             <img loading="lazy" src="{{ URL::to($news->photos[0]->img) }}" alt="{{ $news->title }}">
                                         @else
-                                            <img loading="lazy" src="{{ asset('images/default-news.jpg') }}" alt="{{ $news->title }}">
+                                            <img loading="lazy" src="{{ versioned_asset('images/default-news.jpg') }}" alt="{{ $news->title }}">
                                         @endif
                                     </a>
                                 </div>
@@ -60,7 +63,7 @@
                     <div class="col-xl-12">
                         <div class="blogarea__pagination sp_top_30">
                             @if(method_exists($data['news'], 'links'))
-                                {{ $data['news']->links() }}
+                                {{ $data['news']?->onEachSide(1)->links() }}
                             @endif
                         </div>
                     </div>

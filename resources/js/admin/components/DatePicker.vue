@@ -13,7 +13,7 @@
         :model-value="formattedDate"
         :error-messages="errorMessages"
         v-bind="props"
-        variant="underlined"
+        variant="outlined"
         readonly
         prepend-icon="mdi-calendar"
         clearable
@@ -31,7 +31,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from "vue";
 
 interface Props {
   label?: string;
@@ -60,6 +59,7 @@ const internalDate = ref<Date | null>(
 const formattedDate = computed(() => {
   if (!internalDate.value) return "";
   const date = internalDate.value;
+  if (isNaN(date.getTime())) return "";
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 });
 
@@ -70,9 +70,12 @@ const clearDate = () => {
 
 const handleDateChange = (val: any) => {
   if (val) {
-    internalDate.value = new Date(val);
-    const dateStr = `${internalDate.value.getFullYear()}-${String(internalDate.value.getMonth() + 1).padStart(2, '0')}-${String(internalDate.value.getDate()).padStart(2, '0')}`;
-    emit('update:modelValue', dateStr);
+    const newDate = new Date(val);
+    if (!isNaN(newDate.getTime())) {
+      internalDate.value = newDate;
+      const dateStr = `${newDate.getFullYear()}-${String(newDate.getMonth() + 1).padStart(2, '0')}-${String(newDate.getDate()).padStart(2, '0')}`;
+      emit('update:modelValue', dateStr);
+    }
   } else {
     internalDate.value = null;
     emit('update:modelValue', null);

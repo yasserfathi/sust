@@ -47,6 +47,21 @@ class Ad extends Model implements Auditable
             ->orderBy('ad_album_photo.id');
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($ad) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::deleted(function ($ad) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+
+        static::restored(function ($ad) {
+            \App\Services\HomeCacheService::clearHomeCache();
+        });
+    }
+
     public function scopeWithFirstImage($query)
     {
         return $query->addSelect([

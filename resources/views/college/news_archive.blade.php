@@ -1,10 +1,13 @@
 @extends('college/layout')
 
+@section('title', 'News Archive')
+
+
 @section('content')
    <div class="breadcrumbarea" @if (isset($data['banner']) && $data['banner'])
-        style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
+        style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
     @else
-            style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
+            style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
         @endif>
 
         <div class="container">
@@ -21,7 +24,6 @@
                             </ul>
                         </div>
                     </div>
-
 
 
                 </div>
@@ -63,7 +65,7 @@
                         </div>
 
 
-                        {{ $data['news']->links('vendor.pagination.custom') }}
+                        {{ $data['news']?->onEachSide(1)->links('vendor.pagination.custom') }}
 
                     </div>
                 </div>

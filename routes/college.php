@@ -19,16 +19,16 @@ use App\Http\Controllers\ar\CollegeArController;
 Route::group(['prefix' => 'college', 'middleware' => 'cache.prevent'], function () {
     Route::get('/{name}', [CollegeController::class, 'index'])->name('college_home');
     Route::get('/{name}/about', [CollegeController::class, 'about'])->name('college_about');
-    Route::get('/{name}/activities', [CollegeController::class, 'activities']);
-    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives']);
+    Route::get('/{name}/activities', [CollegeController::class, 'activities'])->name('college_activities');
+    Route::get('/{name}/vision-mission-objectives', [CollegeController::class, 'vision_mission_objectives'])->name('vision_mission_objectives');
     Route::get('/{name}/dean_message', [CollegeController::class, 'dean_message'])->name('college_dean_message');
     Route::get('/{name}/department/{dept_name}', [CollegeController::class, 'about_department'])->name('college_about_department');
     Route::get('/{name}/department/{dept_name}/programs', [CollegeController::class, 'department_programs'])->name('college_department_programs');
     // News & Ads
     Route::get('/{name}/news', [CollegeController::class, 'archive'])->name('college_news_archive');
     Route::get('/{name}/news/details/{slug}', [CollegeController::class, 'details'])->name('college_news_detail');
-    Route::get('/{name}/ads', [CollegeController::class, 'archive'])->name('college_ads_archive');
-    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'details'])->name('college_ads_detail');
+    Route::get('/{name}/ads', [CollegeController::class, 'ads_archive'])->name('college_ads_archive');
+    Route::get('/{name}/ads/details/{slug}', [CollegeController::class, 'ads_details'])->name('college_ads_detail');
     Route::get('/{name}/staff', [CollegeController::class, 'staff'])->name('college_staff');
     Route::get('/{name}/{slug}', [CollegeController::class, 'dynamic_page'])->name('college_dynamic_page');
 });

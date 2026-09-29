@@ -5,7 +5,7 @@ export function useFetchFunctions(api) {
     const data = ref([]);
     const tableLoading = ref(false);
     const totalItems = ref(0);
-    const options = ref({ page: 1, itemsPerPage: 5, sortBy: [], search: { name: '' } });
+    const options = ref({ page: 1, itemsPerPage: 5, sortBy: [], search: '' });
 
     async function apiData(params) {
         try {

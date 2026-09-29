@@ -16,6 +16,15 @@ class StaffAcademicRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation()
+    {
+        if (auth()->check() && auth()->user()->role != 1) {
+            $this->merge([
+                'user_id' => auth()->user()->id,
+            ]);
+        }
+    }
+
     protected function failedValidation(Validator $validator)
     {
         $response = [
@@ -43,6 +52,7 @@ class StaffAcademicRequest extends FormRequest
                 })->ignore(request()->route('id'))
             ],
             'user_id' => 'required',
+            'type' => 'nullable|in:1,2,3',
             'file' => 'nullable|mimetypes:application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/pdf',
             'img' => 'nullable|mimes:jpeg,png,jpg'
         ];

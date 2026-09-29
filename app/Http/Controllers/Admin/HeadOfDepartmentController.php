@@ -33,6 +33,18 @@ class HeadOfDepartmentController extends Controller
 		])
 			->select('id', 'department_id', 'user_id', 'start_date', 'end_date');
 
+		$authUser = Auth::user();
+		if ($authUser && $authUser->role != 1 && $authUser->is_college_rep) {
+			$collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+			if ($collegeId) {
+				$query->whereHas('department', function ($q) use ($collegeId) {
+					$q->where('college_id', $collegeId);
+				});
+			} else {
+				$query->whereRaw('1 = 0');
+			}
+		}
+
 		if (!empty($search)) {
 			$query->where(function ($q) use ($search) {
 				$q->whereHas('department', function ($departmentQuery) use ($search) {
@@ -48,7 +60,7 @@ class HeadOfDepartmentController extends Controller
 		}
 
 		if ($request->has('orderby') && $request->has('ascend')) {
-			$query->orderBy($request->get('orderby'), $request->get('ascend') === 'true' ? 'asc' : 'desc');
+			$query->orderBy($request->get('orderby'), in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc');
 		}
 
 		return response()->json([
@@ -64,7 +76,7 @@ class HeadOfDepartmentController extends Controller
 			->latest()
 			->first();
 
-		if ($latestHead->count() > 0) {
+		if ($latestHead) {
 			//check request start date if after last start date
 			if (Carbon::parse($request->start_date)->lt(Carbon::parse($latestHead->start_date))) {
 				return response()->json(['message' => 'The new start date is earlier than the previous one', 'status' => 409]);
@@ -131,7 +143,7 @@ class HeadOfDepartmentController extends Controller
 		$str = '';
 		if ($request->id != '') {
 			$data = HeadOfDepartment::with('user')
-				->select('user_id', 'start_date')->where([['department_id', '=', DB::raw('"' . $request->id . '"')]])->orderBy('start_date', 'desc')->first();
+				->select('user_id', 'start_date')->where('department_id', $request->id)->orderBy('start_date', 'desc')->first();
 			if ($data != null)
 				$str = '<div class="col-md-12"><hr style="height:0.5px" /><p class="p-3 col-md-12 current">رئيس القسم الحالي لقسم <label>' . $data->user->staff->department->name . '</label> : <label> ' . $data->user->name . '</label> من يوم  <label id="from">' . Carbon::parse($data->start_date)->format('Y-m-d') . '</label></p><hr /></div>';
 		}

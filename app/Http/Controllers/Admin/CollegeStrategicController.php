@@ -26,7 +26,15 @@ class CollegeStrategicController extends Controller
                 )
                 ->with('college:id,name')
                 ->whereHas('college', function ($q) use ($search) {
-                    $q->where('user_id', 1);
+                    $authUser = Auth::user();
+                    if ($authUser->role != 1) {
+                        if ($authUser->is_college_rep) {
+                            $collegeId = $authUser->staff_latest_by_id?->department?->college_id;
+                            $q->where('id', $collegeId);
+                        } else {
+                            $q->where('user_id', $authUser->id);
+                        }
+                    }
                     if (!empty($search)) {
                         $q->where('name', 'like', '%' . $search . '%');
                     }
@@ -34,12 +42,12 @@ class CollegeStrategicController extends Controller
         
         // Sorting
         $orderBy = $request->get('orderby');
-        $ascend = $request->get('ascend');
+        $ascend = in_array(strtolower(trim($request->get('ascend') ?? '')), ['asc', 'true', '1']) ? 'asc' : 'desc';
         
         if ($orderBy && $ascend) {
             $query->orderBy($orderBy, $ascend);
         } else {
-            $query->orderBy('id', 'desc');
+            $query->orderByDesc('id');
         }
         
         // Pagination

@@ -1,16 +1,19 @@
-import { createApp } from "vue";
+import { createApp, defineAsyncComponent } from "vue";
 import { createPinia } from "pinia";
-import { ZiggyVue } from "ziggy-js";
+import { ZiggyVue, route } from "ziggy-js";
 import { useAuthStore } from "./store/index";
 import { Ziggy } from "./ziggy.js";
 import axios from "axios";
 import router from "./router";
 import App from "./App.vue";
-import { ar } from 'vuetify/locale'
-
+const Editor = defineAsyncComponent(() => import("./components/Editor.vue"));
+const Table = defineAsyncComponent(() => import("./components/Table.vue"));
+import { createVuetify } from "vuetify";
+import { ar } from 'vuetify/locale';
 import { aliases, mdi } from 'vuetify/iconsets/mdi';
 import "vuetify/styles";
 import "../../css/app.scss";
+
 // Axios Setup
 function configureAxios(pinia) {
   axios.defaults.baseURL = "/api";
@@ -20,7 +23,7 @@ function configureAxios(pinia) {
     "X-Requested-With": "XMLHttpRequest",
   };
   axios.defaults.withCredentials = true;
-  axios.defaults.timeout = 10000;
+  axios.defaults.timeout = 60000;
 
   axios.interceptors.request.use((config) => {
     const token = localStorage.getItem("authToken");
@@ -53,15 +56,9 @@ function configureAxios(pinia) {
   );
 }
 
-// Vuetify Setup
-async function loadVuetify() {
-  const { createVuetify } = await import("vuetify");
-  const components = await import("vuetify/components");
-  const directives = await import("vuetify/directives");
-
+// Vuetify Setup with Tree-Shaking
+function loadVuetify() {
   return createVuetify({
-    components,
-    directives,
     locale: {
       locale: 'ar',
       fallback: 'ar',
@@ -74,23 +71,61 @@ async function loadVuetify() {
         mdi,
       },
     },
+    defaults: {
+      global: {
+        ripple: true,
+      },
+      VTextField: {
+        variant: 'outlined',
+        density: 'comfortable',
+        color: 'primary',
+        rounded: 'lg',
+      },
+      VSelect: {
+        variant: 'outlined',
+        density: 'comfortable',
+        color: 'primary',
+        rounded: 'lg',
+      },
+      VCombobox: {
+        variant: 'outlined',
+        density: 'comfortable',
+        color: 'primary',
+        rounded: 'lg',
+      },
+      VTextarea: {
+        variant: 'outlined',
+        density: 'comfortable',
+        color: 'primary',
+        rounded: 'lg',
+      },
+      VBtn: {
+        rounded: 'pill',
+        elevation: 0,
+        fontWeight: 'bold',
+      },
+      VCard: {
+        rounded: 'xl',
+      }
+    },
     theme: {
       defaultTheme: "light",
       themes: {
         light: {
           colors: {
             primary: "#d65440",
-            secondary: "#424949",
-            error: "#ff5252",
-            info: "#2196F3",
-            success: "#4CAF50",
-            warning: "#FFC107",
+            secondary: "#1e293b", // Switched to a sleeker, deeper secondary
+            error: "#ef4444",     // Modernized error red
+            info: "#3b82f6",      // Modernized info blue
+            success: "#10b981",   // Modernized success green
+            warning: "#f59e0b",   // Modernized warning yellow
+            background: "#f8fafc",
           },
         },
         dark: {
           colors: {
             primary: "#d65440",
-            secondary: "#5CBBF6",
+            secondary: "#38bdf8",
           },
         },
       },
@@ -103,7 +138,7 @@ async function initializeApp() {
   try {
     const app = createApp(App);
     const pinia = createPinia();
-    const vuetify = await loadVuetify();
+    const vuetify = loadVuetify();
 
     configureAxios(pinia);
 
@@ -111,10 +146,14 @@ async function initializeApp() {
     Ziggy.url = window.location.origin;
     Ziggy.port = null;
     window.Ziggy = Ziggy; // Make it globally available so route() works in the Pinia store
+    window.route = route;
 
     // Initialize the auth store before mounting the app
     const authStore = useAuthStore(pinia);
     await authStore.initialize();
+
+    app.component("Editor", Editor);
+    app.component("Table", Table);
 
     app.use(pinia).use(router).use(vuetify).use(ZiggyVue, Ziggy);
     app.mount("#app");

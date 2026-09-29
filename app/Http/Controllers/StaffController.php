@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\{StaffAcademic, Staff_resume, User};
+use App\Models\{College, StaffAcademic, Staff_resume, User};
 
 class StaffController extends Controller
 {
-    private $job_titles = [
+    private $grades = [
         'Teaching assistant' => 'مساعد تدريس',
         'Lecturer' => 'محاضر',
         'Assistant Professor' => 'استاذ مساعد',
@@ -16,34 +16,48 @@ class StaffController extends Controller
 
     private function getSharedData()
     {
+        $entities = College::select('id', 'name_en', 'slug', 'college_type')
+            ->where('active', 1)
+            ->get();
+
         return [
-            'colleges' => \App\Models\College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'college')->get(),
-            'deanships' => \App\Models\College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'deanship')->get(),
-            'centers' => \App\Models\College::select('name_en', 'slug')->where('active', 1)->where('college_type', 'center')->get(),
+            'colleges' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['college']))->where('id', '!=', 1)->values(),
+            'deanships' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['deanship']))->values(),
+            'centers' => $entities->filter(fn($c) => in_array($c->getRawOriginal('college_type'), ['center', 'institute']))->sortBy(fn($c) => $c->getRawOriginal('college_type'))->values(),
         ];
     }
 
-    public function cv($name_en)
+    public function cv($slug)
     {
-        $userModel = User::where('name_en', $name_en)
+        if (strtolower($slug) === 'admin') {
+            abort(404);
+        }
+
+        $userModel = User::where('slug', $slug)
             ->with(['staff_latest.department.college', 'staff_latest'])
             ->where('active', 1)
             ->firstOrFail();
 
         $resumeRecord = Staff_resume::where('user_id', $userModel->id)->first();
 
-        if ($resumeRecord && $resumeRecord->file) {
-            $filePath = storage_path('app/public/' . $resumeRecord->file);
-            if (file_exists($filePath)) {
-                return response()->download($filePath);
+        if ($resumeRecord) {
+            $file = $resumeRecord->file_en ?: $resumeRecord->file;
+            if ($file && trim($file) !== '') {
+                // Serve directly via asset() without including 'storage/'
+                $cleanPath = preg_replace('#^storage/#', '', ltrim($file, '/'));
+                return redirect(asset($cleanPath));
             }
         }
-        return redirect('#');
+        return redirect()->route('staff_home', ['slug' => $slug])->with('error', 'The CV file is not available.');
     }
 
-    public function show($name_en)
+    public function show($slug)
     {
-        $userModel = User::where('name_en', $name_en)
+        if (strtolower($slug) === 'admin') {
+            abort(404);
+        }
+
+        $userModel = User::where('slug', $slug)
             ->with(['staff_latest.department.college', 'staff_latest'])
             ->where('active', 1)
             ->firstOrFail();
@@ -65,12 +79,12 @@ class StaffController extends Controller
         }
 
         $data = $this->getSharedData();
-        return view('staff.index', ['user' => $userModel, 'data' => $data, 'job_titles' => $this->job_titles]);
+        return view('staff.index', ['user' => $userModel, 'data' => $data, 'grades' => $this->grades]);
     }
 
-    public function scientificPapers($name_en)
+    public function scientificPapers($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $papers = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'scientific_papers')
@@ -84,13 +98,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'papers' => $papers,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function books($name_en)
+    public function books($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $books = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'books')
@@ -104,13 +118,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'books' => $books,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function runningProjects($name_en)
+    public function runningProjects($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $projects = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'running_projects')
@@ -124,13 +138,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'projects' => $projects,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function courses($name_en)
+    public function courses($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $courses = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'courses')
@@ -144,13 +158,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'courses' => $courses,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function communityService($name_en)
+    public function communityService($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $services = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'communityservice')
@@ -164,13 +178,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'services' => $services,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function workshops($name_en)
+    public function workshops($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $workshops = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'workshops')
@@ -184,13 +198,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'workshops' => $workshops,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function supervisingProjects($name_en)
+    public function supervisingProjects($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $supervising_projects = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'supervising_projects')
@@ -204,13 +218,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'supervising_projects' => $supervising_projects,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function researchTopics($name_en)
+    public function researchTopics($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $topics = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'research_topics')
@@ -224,13 +238,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'topics' => $topics,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function positions($name_en)
+    public function positions($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $positions = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'positions')
@@ -244,13 +258,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'positions' => $positions,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function committees($name_en)
+    public function committees($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $committees = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'committees')
@@ -264,13 +278,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'committees' => $committees,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function trainingCourses($name_en)
+    public function trainingCourses($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $training_courses = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'training_courses')
@@ -284,13 +298,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'training_courses' => $training_courses,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function certificates($name_en)
+    public function certificates($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $certificates = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'certificates')
@@ -304,13 +318,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'certificates' => $certificates,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function googleScholar($name_en)
+    public function googleScholar($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $scholar = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'google_scholar')
@@ -324,13 +338,13 @@ class StaffController extends Controller
             'user' => $userModel,
             'scholar' => $scholar,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function articles($name_en)
+    public function articles($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $articles = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'articles')
@@ -344,17 +358,19 @@ class StaffController extends Controller
             'user' => $userModel,
             'articles' => $articles,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 
-    public function links($name_en)
+    public function links($slug)
     {
-        $userModel = User::where('name_en', $name_en)->firstOrFail();
+                $userModel = User::where('slug', $slug)->firstOrFail();
 
         $links = StaffAcademic::where('user_id', $userModel->id)
             ->where('item', 'links')
-            ->where('lang', '2')
+            ->where(function($q) {
+                $q->where('lang', '2')->orWhereNull('lang')->orWhere('lang', '');
+            })
             ->get();
 
         $userModel->load(['staff_latest.department.college']);
@@ -364,7 +380,7 @@ class StaffController extends Controller
             'user' => $userModel,
             'links' => $links,
             'data' => $data,
-            'job_titles' => $this->job_titles
+            'grades' => $this->grades
         ]);
     }
 }

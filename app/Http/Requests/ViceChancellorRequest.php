@@ -6,6 +6,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Contracts\Validation\Validator;
+use App\Models\Department;
 
 class ViceChancellorRequest extends FormRequest
 {
@@ -14,6 +15,25 @@ class ViceChancellorRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    
+    protected function prepareForValidation()
+    {
+        if (auth()->check() && auth()->user()->role != 1) {
+            $mergeData = ['user_id' => auth()->user()->id];
+            
+            $userDept = Department::whereHas('staff', function ($q) {
+                $q->where('user_id', auth()->user()->id);
+            })->first();
+            
+            if ($userDept) {
+                $mergeData['department_id'] = $userDept->id;
+                $mergeData['college_id'] = $userDept->college_id;
+            }
+            
+            $this->merge($mergeData);
+        }
     }
 
     protected function failedValidation(Validator $validator)

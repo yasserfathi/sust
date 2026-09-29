@@ -52,7 +52,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
 import { useStudentAuthStore } from '../store';
 import { useRouter } from 'vue-router';
 

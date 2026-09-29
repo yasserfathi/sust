@@ -4,9 +4,9 @@
 
 @section('content')
     <div class="breadcrumbarea" @if (isset($data['banner']) && $data['banner'])
-        style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
+        style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
     @else
-            style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
+            style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
         @endif>
 
         <div class="container">
@@ -25,11 +25,9 @@
                     </div>
 
 
-
                 </div>
             </div>
         </div>
-
 
 
     </div>
@@ -39,7 +37,7 @@
         <div class="container">
             <div class="row">
                 <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12">
-                    <div class="blogarae__img__2 course__details__img__2 aos-init aos-animate" data-aos="fade-up">
+                    <div class="blogarae__img__2 course__details__img__2 " data-aos="fade-up">
                         <img loading="lazy" src="{{ URL::to('images/gallery/overview.jpg') }}" alt="About Sust">
                     </div>
                     <div class="blog__details__content__wraper">
@@ -85,8 +83,8 @@
                                     Share
                                 </li>
                                 <li>
-                                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ url()->current() }}&quote=Vice-Chancellor"
-                                        target="_blank" class="facebook-share-button">
+                                    <a href="{{ 'https://www.facebook.com/sharer/sharer.php?' . http_build_query(['u' => url()->current(), 'quote' => 'Vice-Chancellor']) }}"
+                                        target="_blank" rel="noopener noreferrer" class="facebook-share-button">
                                         <i class="icofont-facebook"></i>
                                     </a>
                                 </li>
@@ -94,18 +92,13 @@
                                     <a href="{{ 'https://twitter.com/intent/tweet?' . http_build_query([
         'url' => url()->current(),
         'text' => 'Vice Chancellor',
-        'hashtags' => 'Sudan University of Science and Technology'
+        'hashtags' => 'SUST,SudanUniversity'
     ]) }}" target="_blank" rel="noopener noreferrer">
                                         <i class="icofont-twitter"></i>
                                     </a>
                                 </li>
                             </ul>
                         </div>
-
-
-
-
-
 
 
                     </div>

@@ -22,10 +22,10 @@ class StaffEmploysController extends Controller
         return response()->json(['message' => 'created', 'status' => 201]);
     }
 
-    public function show(StaffEmploy $staffEmploy)
+    public function show($id)
     {
-        $data = StaffEmploy::where('user_id', $staffEmploy->id)->with(['department:id,name,college_id', 'department.college:id,name'])
-            ->select('id', 'job_title', 'job_title_en', 'rank', 'rank_en', 'hire_date', 'specialty', 'subspecialty', 'specialty_en', 'subspecialty_en', 'department_id')->orderBy('hire_date', 'desc')->get();
+        $data = StaffEmploy::where('user_id', $id)->with(['department:id,name,college_id', 'department.college:id,name'])
+            ->select('id', 'grade', 'grade_en', 'hire_date', 'specialty', 'subspecialty', 'specialty_en', 'subspecialty_en', 'department_id')->orderBy('hire_date', 'desc')->get();
         return response()->json(['result' => $data, 'status' => 200]);
     }
 
@@ -38,10 +38,10 @@ class StaffEmploysController extends Controller
         }
 
         $record->department_id = $request->department_id;
-        $record->job_title = $request->job_title;
-        $record->job_title_en = $request->job_title_en;
-        $record->rank = $request->rank;
-        $record->rank_en = $request->rank_en;
+        $record->grade = $request->grade;
+        $record->grade_en = $request->grade_en;
+        $record->grade = $request->grade;
+        $record->grade_en = $request->grade_en;
         $record->hire_date = $request->hire_date;
         $record->specialty = $request->specialty;
         $record->subspecialty = $request->subspecialty;

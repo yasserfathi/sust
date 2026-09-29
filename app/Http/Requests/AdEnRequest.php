@@ -32,6 +32,8 @@ class AdEnRequest extends FormRequest
             'college_id' => 'bail|required|string',
             'title' => [
                 'required',
+                'string',
+                'max:255',
                 Rule::unique('ads')->where(function ($query){
                     $query->where('title', $this->title)
                     ->where('lang', 2)->whereNull('deleted_at');

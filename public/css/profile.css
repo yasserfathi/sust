@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&display=swap');
 
 /* Override Theme Variables for this page */
 :root {
@@ -12,16 +12,18 @@
 }
 
 h1, h2, h3, h4, h5, h6 {
-    color: var(--sust-blue-light);
+    color: #1e293b;
 }
 
 body.ltr-profile {
-    font-family: 'Tajawal', 'Inter', 'Hind', sans-serif;
+    font-family: "Cairo", sans-serif;
     direction: ltr;
     text-align: left;
     background-color: #fbfcff;
     /* Light bluish/grey match theme */
     color: var(--bodyColor);
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
 }
 
 /* LTR Helpers */
@@ -694,4 +696,193 @@ body.ltr-profile {
 .mobile-off-canvas-active .header-mobile-aside-wrap .mobile-menu-wrap {
     background-color: #fff;
     border: 0;
+}
+
+ol.breadcrumb {
+    list-style: none !important;
+    display: flex !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
+ol.breadcrumb li {
+    list-style: none !important;
+    display: inline-block !important;
+}
+ol.breadcrumb li.breadcrumb-item + li::before {
+    content: "/" !important;
+    padding-right: 8px !important;
+    color: #6c757d !important;
+}
+
+/* ==========================================================================
+   Override styles to resolve text visibility and theme color issues
+   ========================================================================== */
+
+/* Fix invisible/unclear heading texts inside cards and content areas */
+.main-content-overlap h1, 
+.main-content-overlap h2, 
+.main-content-overlap h3, 
+.main-content-overlap h4, 
+.main-content-overlap h5, 
+.main-content-overlap h6 {
+    color: #1e293b !important; /* Dark Slate Gray for maximum readability */
+    font-weight: 700 !important;
+}
+
+/* Fix Bootstrap blue button overrides to match primary university color (#ce6148) */
+.btn-primary, .btn-primary:active, .btn-primary:focus {
+    background-color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover {
+    background-color: #b84c34 !important;
+    border-color: #b84c34 !important;
+}
+
+.btn-outline-primary {
+    color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:active, .btn-outline-primary:focus {
+    background-color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    color: #fff !important;
+}
+
+/* Fix link and icon colors (replace blue with theme color) */
+.text-primary {
+    color: var(--primaryColor, #ce6148) !important;
+}
+
+.main-content-overlap a:not(.btn) {
+    color: var(--primaryColor, #ce6148);
+    text-decoration: none;
+}
+
+.main-content-overlap a:not(.btn):hover {
+    color: #b84c34;
+    text-decoration: underline;
+}
+
+
+/* Hard reset to solve body/html scroll cutting off before footer */
+}
+
+/* ==========================================================================
+   Override styles to resolve text visibility and theme color issues
+   ========================================================================== */
+
+/* Fix invisible/unclear heading texts inside cards and content areas */
+.main-content-overlap h1, 
+.main-content-overlap h2, 
+.main-content-overlap h3, 
+.main-content-overlap h4, 
+.main-content-overlap h5, 
+.main-content-overlap h6 {
+    color: #1e293b !important; /* Dark Slate Gray for maximum readability */
+    font-weight: 700 !important;
+}
+
+/* Fix Bootstrap blue button overrides to match primary university color (#ce6148) */
+.btn-primary, .btn-primary:active, .btn-primary:focus {
+    background-color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover {
+    background-color: #b84c34 !important;
+    border-color: #b84c34 !important;
+}
+
+.btn-outline-primary {
+    color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    background-color: transparent !important;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:active, .btn-outline-primary:focus {
+    background-color: var(--primaryColor, #ce6148) !important;
+    border-color: var(--primaryColor, #ce6148) !important;
+    color: #fff !important;
+}
+
+/* Fix link and icon colors (replace blue with theme color) */
+.text-primary {
+    color: var(--primaryColor, #ce6148) !important;
+}
+
+.main-content-overlap a:not(.btn) {
+    color: var(--primaryColor, #ce6148);
+    text-decoration: none;
+}
+
+.main-content-overlap a:not(.btn):hover {
+    color: #b84c34;
+    text-decoration: underline;
+}
+
+
+/* Hard reset to solve body/html scroll cutting off before footer */
+html {
+    height: auto !important;
+    overflow-y: auto !important;
+}
+
+body, body.body__wrapper, body.arabic-profile, body.ltr-profile {
+    height: auto !important;
+    min-height: 100vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    position: relative !important;
+}
+
+/* Staff Links Card */
+.link-item-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    border-color: #e9ecef !important;
+    background-color: #ffffff !important;
+}
+.link-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05) !important;
+    border-color: rgba(206, 97, 72, 0.3) !important;
+}
+
+/* Staff Academic Books */
+.academic-book-item {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background: #ffffff;
+}
+.academic-book-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06) !important;
+}
+.book-cover-box {
+    width: 65px;
+    height: 85px;
+    background: #f8f9fa;
+}
+.book-cover-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.book-cover-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #ce6148 0%, #8e321e 100%);
+}
+.book-details-text {
+    color: #6b7280;
+    font-size: 0.85rem;
+    line-height: 1.5;
 }

@@ -2,9 +2,9 @@
 @section('title', 'قيادات الجامعة')
 @section('content')
     <div class="breadcrumbarea" @if (isset($data['banner']) && $data['banner'])
-        style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
+        style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to($data['banner']) }}); background-size: cover; background-position: center;"
     @else
-            style="background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.5)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
+            style="background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)),url({{ URL::to('/images/gallery/vision.jpg') }}); background-size: cover; background-position: center;"
         @endif>
         <div class="container">
             <div class="row">
@@ -25,194 +25,183 @@
         </div>
     </div>
 
-    <style>
-        .leadership-header {
-            text-align: center;
-            font-weight: 800;
-            color: #2c3e50;
-            margin: 50px 0;
-            font-family: 'Tajawal', 'Cairo', sans-serif;
-            font-size: 2.5rem;
-            direction: rtl;
-        }
-
-        .leadership-header span {
-            color: #ce6148;
-        }
-
-        .section-title-wrapper {
-            text-align: center;
-            margin: 60px 0 40px 0;
-        }
-
-        .section-title {
-            background: linear-gradient(135deg, #4b134f 0%, #ce6148 100%);
-            color: #ffffff;
-            border-radius: 30px;
-            padding: 12px 50px;
-            box-shadow: 0 8px 20px rgba(206, 97, 72, 0.15);
-            font-weight: 700;
-            font-size: 1.4rem;
-            display: inline-block;
-            font-family: 'Tajawal', 'Cairo', sans-serif;
-        }
-
-        .leader-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 30px;
-            justify-items: center;
-            direction: rtl;
-        }
-
-        .leader-grid-top {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 30px;
-            margin-bottom: 50px;
-            direction: rtl;
-        }
-
-        .leader-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px 20px 20px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(206, 97, 72, 0.05);
-            border: 1px solid rgba(206, 97, 72, 0.05);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease;
-            width: 100%;
-            max-width: 250px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-family: 'Tajawal', 'Cairo', sans-serif;
-        }
-
-        .leader-card.vc-card {
-            max-width: 300px;
-            margin: 0 auto 50px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(255, 245, 240, 1) 100%);
-            box-shadow: 0 15px 35px rgba(206, 97, 72, 0.15);
-            border: 1px solid rgba(206, 97, 72, 0.2);
-        }
-
-        .leader-card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 15px 35px rgba(206, 97, 72, 0.12);
-            border-color: rgba(206, 97, 72, 0.3);
-        }
-
-        .leader-img {
-            width: 140px;
-            height: 140px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 5px solid #fff;
-            box-shadow: 0 8px 20px rgba(206, 97, 72, 0.12);
-            margin-bottom: 20px;
-            transition: transform 0.4s ease;
-        }
-
-        .leader-card:hover .leader-img {
-            transform: scale(1.08);
-        }
-
-        .leader-name {
-            color: #ce6148;
-            font-weight: 800;
-            font-size: 1.15rem;
-            margin-bottom: 10px;
-            line-height: 1.3;
-        }
-
-        .vc-card .leader-name {
-            color: #ce6148;
-            font-size: 1.3rem;
-        }
-
-        .leader-role {
-            font-size: 0.95rem;
-            color: #555;
-            font-weight: 600;
-            line-height: 1.4;
-        }
-    </style>
-
     <div class="blogarea__2 sp_top_50 sp_bottom_100">
         <div class="container">
-            <h1 class="leadership-header" data-aos="fade-up">قيادات <span>الجامعة</span></h1>
-
-            @if(isset($data['vice_chancellor']))
-                <div data-aos="fade-up">
-                    <div class="leader-card vc-card">
-                        <img class="leader-img"
-                            src="{{ URL::to($data['vice_chancellor']->user->img ?? '/images/default-avatar.png') }}"
-                            onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($data['vice_chancellor']->user->name ?? 'مدير') }}&background=ce6148&color=fff&size=140'">
-                        <div class="leader-name">{{ $data['vice_chancellor']->user->name ?? '' }}</div>
-                        <div class="leader-role">مدير الجامعة</div>
+            <div class="row">
+                <div class="col-xl-8 col-lg-8 col-md-12 col-sm-12 col-12">
+                    <div class="section-header text-center mb-5" data-aos="fade-up">
+                        <h2 class="section-title">قيادات <span class="highlight">الجامعة</span></h2>
                     </div>
-                </div>
-            @endif
 
-            @php
-                $typeMapping = [
-                    'deanship' => 'عمادات الجامعة',
-                    'college' => 'كليات الجامعة',
-                    'center' => 'معاهد الجامعة',
-                    'secretariat' => 'إدارات الجامعة',
-                ];
-
-                // Unmapped types might be top-level roles (e.g. Deputy VC)
-                $topLeaders = [];
-                $groupedRemaining = [];
-
-                foreach ($data['leaders_grouped'] as $type => $leaders) {
-                    if (!array_key_exists($type, $typeMapping)) {
-                        foreach ($leaders as $leader) {
-                            $topLeaders[] = $leader;
-                        }
-                    } else {
-                        $groupedRemaining[$type] = $leaders;
-                    }
-                }
-            @endphp
-
-            @if(count($topLeaders) > 0)
-                <div class="leader-grid-top" data-aos="fade-up" data-aos-delay="100">
-                    @foreach($topLeaders as $leader)
-                        <div class="leader-card">
-                            <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
-                                onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'قيادي') }}&background=ce6148&color=fff&size=140'">
-                            <div class="leader-name">{{ $leader->user->name ?? '' }}</div>
-                            <div class="leader-role">{{ $leader->college->name ?? '' }}</div>
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            @foreach(['deanship', 'college', 'center', 'secretariat'] as $type)
-                @if(isset($groupedRemaining[$type]) && count($groupedRemaining[$type]) > 0)
-                    <div class="section-title-wrapper" data-aos="fade-up">
-                        <div class="section-title">{{ $typeMapping[$type] }}</div>
-                    </div>
-                    <div class="leader-grid">
-                        @foreach($groupedRemaining[$type] as $leader)
-                            <div class="leader-card" data-aos="fade-up" data-aos-delay="{{ $loop->iteration * 50 % 500 }}">
-                                <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
-                                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'عميد') }}&background=ce6148&color=fff&size=140'">
-                                <div class="leader-name">{{ $leader->user->name ?? '' }}</div>
-                                <div class="leader-role">عميد</div>
-                                <div class="leader-role" style="font-size: 0.85rem; color: #777; margin-top: 5px;">
-                                    {{ $leader->college->name ?? '' }}</div>
+                    <div class="leadership-tier">
+                        <div class="leader-card" data-aos="fade-up">
+                            <img loading="lazy" src="{{ versioned_asset('images/staff/1784996576000000.jpg') }}" alt="البروفيسور/ شنبول عدلان" class="leader-img">
+                            <div class="leader-info">
+                                <a href="#" target="_blank" class="leader-name">البروفيسور/ شمبول عدلان</a>
+                                <a href="#" target="_blank" class="leader-role">رئيس مجلس الجامعة</a>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="leadership-tree">
+
+                        @if(isset($data['vice_chancellor']))
+                            <div class="leadership-tier" data-aos="fade-up">
+                                <div class="leader-card vc-card">
+                                    @if(!empty($data['vice_chancellor']?->user?->slug))
+                                        <a href="{{ URL::to('/ar/staff/' . $data['vice_chancellor']->user->slug) }}">
+                                            <img class="leader-img"
+                                                src="{{ URL::to($data['vice_chancellor']?->user->img ?? '/images/default-avatar.png') }}"
+                                                onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($data['vice_chancellor']?->user->name ?? 'مدير') }}&background=ce6148&color=fff&size=140'">
+                                        </a>
+                                    @else
+                                        <img class="leader-img"
+                                            src="{{ URL::to($data['vice_chancellor']?->user->img ?? '/images/default-avatar.png') }}"
+                                            onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($data['vice_chancellor']?->user->name ?? 'مدير') }}&background=ce6148&color=fff&size=140'">
+                                    @endif
+                                    <div class="leader-info">
+                                        <div class="leader-name">
+                                            @if(!empty($data['vice_chancellor']?->user?->slug))
+                                                <a href="{{ URL::to('/ar/staff/' . $data['vice_chancellor']->user->slug) }}" class="text-decoration-none text-dark hover-primary" style="transition: color 0.2s ease;">
+                                                    {{ $data['vice_chancellor']?->user_title_ar ?? '' }}{{ $data['vice_chancellor']?->user->name ?? '' }}
+                                                </a>
+                                            @else
+                                                {{ $data['vice_chancellor']?->user_title_ar ?? '' }}{{ $data['vice_chancellor']?->user->name ?? '' }}
+                                            @endif
+                                        </div>
+                                        <div class="leader-role">مدير الجامعة</div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(isset($data['university_ranks']) && $data['university_ranks']?->count() > 0)
+                            <div class="leadership-tier leadership-tier-ranks" data-aos="fade-up">
+                                @foreach($data['university_ranks'] as $rank_person)
+                                    <div class="leader-card ranks-card">
+                                        @if(!empty($rank_person->user?->slug))
+                                            <a href="{{ URL::to('/ar/staff/' . $rank_person->user->slug) }}">
+                                                <img class="leader-img"
+                                                    src="{{ URL::to($rank_person->user->img ?? '/images/default-avatar.png') }}"
+                                                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($rank_person->user->name ?? 'قيادي') }}&background=ce6148&color=fff&size=140'">
+                                            </a>
+                                        @else
+                                            <img class="leader-img"
+                                                src="{{ URL::to($rank_person->user->img ?? '/images/default-avatar.png') }}"
+                                                onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($rank_person->user->name ?? 'قيادي') }}&background=ce6148&color=fff&size=140'">
+                                        @endif
+                                        <div class="leader-info">
+                                            <div class="leader-name">
+                                                @if(!empty($rank_person->user?->slug))
+                                                    <a href="{{ URL::to('/ar/staff/' . $rank_person->user->slug) }}" class="text-decoration-none text-dark hover-primary" style="transition: color 0.2s ease;">
+                                                        {{ $rank_person->user_title_ar ?? '' }}{{ $rank_person->user->name ?? '' }}
+                                                    </a>
+                                                @else
+                                                    {{ $rank_person->user_title_ar ?? '' }}{{ $rank_person->user->name ?? '' }}
+                                                @endif
+                                            </div>
+                                            <div class="leader-role">{{ $rank_person->administrativePosition->title ?? $rank_person->administrativePosition->title_en ?? '' }}</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @php
+                            $typeMapping = [
+                                'college' => 'عمداء <span class="highlight">الكليات</span>',
+                                'deanship' => 'عمداء <span class="highlight">العمادات</span>',
+                                'institute' => 'عمداء <span class="highlight">المعاهد</span>',
+                                'center' => 'عمداء <span class="highlight">المراكز</span>',
+                                'secretariat' => 'عمداء <span class="highlight">الإدارات</span>',
+                            ];
+
+                            $topLeaders = [];
+                            $groupedRemaining = [];
+
+                            foreach ($data['leaders_grouped'] as $type => $leaders) {
+                                if (!array_key_exists($type, $typeMapping)) {
+                                    foreach ($leaders as $leader) {
+                                        $topLeaders[] = $leader;
+                                    }
+                                } else {
+                                    $groupedRemaining[$type] = $leaders;
+                                }
+                            }
+                        @endphp
+
+                        @if(count($topLeaders) > 0)
+                            <div class="leadership-tier" data-aos="fade-up" data-aos-delay="100">
+                                @foreach($topLeaders as $leader)
+                                    <div class="leader-card">
+                                        @if(!empty($leader->user?->slug))
+                                            <a href="{{ URL::to('/ar/staff/' . $leader->user->slug) }}">
+                                                <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
+                                                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'قيادي') }}&background=ce6148&color=fff&size=140'">
+                                            </a>
+                                        @else
+                                            <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
+                                                onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'قيادي') }}&background=ce6148&color=fff&size=140'">
+                                        @endif
+                                        <div class="leader-info">
+                                            <div class="leader-name">
+                                                @if(!empty($leader->user?->slug))
+                                                    <a href="{{ URL::to('/ar/staff/' . $leader->user->slug) }}" class="text-decoration-none text-dark hover-primary" style="transition: color 0.2s ease;">
+                                                        {{ $leader->user_title_ar ?? '' }}{{ $leader->user->name ?? '' }}
+                                                    </a>
+                                                @else
+                                                    {{ $leader->user_title_ar ?? '' }}{{ $leader->user->name ?? '' }}
+                                                @endif
+                                            </div>
+                                            <div class="leader-role">{{ $leader->college->name ?? '' }}</div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @foreach(['college', 'deanship', 'institute', 'center', 'secretariat'] as $type)
+                            @if(isset($groupedRemaining[$type]) && count($groupedRemaining[$type]) > 0)
+                                </div>
+                                <div class="section-header text-center my-5" data-aos="fade-up">
+                                    <h2 class="section-title">{!! $typeMapping[$type] !!}</h2>
+                                </div>
+                                <div class="leadership-tree">
+                                <div class="leadership-tier">
+                                    @foreach($groupedRemaining[$type] as $leader)
+                                        <div class="leader-card" data-aos="fade-up" data-aos-delay="{{ ($loop->iteration % 3) * 100 }}">
+                                            @if(!empty($leader->user?->slug))
+                                                <a href="{{ URL::to('/ar/staff/' . $leader->user->slug) }}">
+                                                    <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
+                                                        onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'عميد') }}&background=ce6148&color=fff&size=140'">
+                                                </a>
+                                            @else
+                                                <img class="leader-img" src="{{ URL::to($leader->user->img ?? '/images/default-avatar.png') }}"
+                                                    onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($leader->user->name ?? 'عميد') }}&background=ce6148&color=fff&size=140'">
+                                            @endif
+                                            <div class="leader-info">
+                                                <div class="leader-name">
+                                                    @if(!empty($leader->user?->slug))
+                                                        <a href="{{ URL::to('/ar/staff/' . $leader->user->slug) }}" class="text-decoration-none text-dark hover-primary" style="transition: color 0.2s ease;">
+                                                            {{ $leader->user_title_ar ?? '' }}{{ $leader->user->name ?? '' }}
+                                                        </a>
+                                                    @else
+                                                        {{ $leader->user_title_ar ?? '' }}{{ $leader->user->name ?? '' }}
+                                                    @endif
+                                                </div>
+                                                <div class="leader-role">عميد</div>
+                                                <div class="leader-role" style="font-size: 0.85rem; color: #777; margin-top: 5px;">
+                                                    {{ $leader->college->name ?? '' }}</div>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         @endforeach
                     </div>
-                @endif
-            @endforeach
-
+                </div>
+                @include('ar/administration_sidebar')
+            </div>
         </div>
     </div>
 @endsection

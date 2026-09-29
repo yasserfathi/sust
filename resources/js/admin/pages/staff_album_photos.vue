@@ -1,69 +1,75 @@
 <template>
-  <v-container>
+  <v-container fluid class="px-md-8 px-4">
     <v-card>
       <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="معرض الصور"
-        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close" :fullscreen="fullscreen" transition="dialog-bottom-transition">
+        @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close" :fullscreen="fullscreen"
+        transition="dialog-bottom-transition">
         <Form fast-fail name="form" :validation-schema="validationSchema" lazy-validation>
           <v-row>
-            <v-col cols="12" md="4" class="pt-0">
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-show="colleges && colleges.length > 1">
               <v-select id="college_id" name="college_id" :items="colleges" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="college_id"  @update:modelValue="getDepartments($event)"
-                label="اسماء الكليات" :error-messages="errors.college_id" variant="underlined"></v-select>
+                item-value="id" prepend-icon="mdi-bank" v-model="college_id" @update:modelValue="getDepartments($event)" label="اسماء الكليات" :error-messages="errors.college_id" variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="4" class="pt-0">
-              <v-select id="department_id" name="department_id" :disabled="deartment_disabled" :items="departments" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="department_id"  @update:modelValue="getUsers($event)"
-                label="اسماء الاقسام" :error-messages="errors.department_id" variant="underlined"></v-select>
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-if="authStore?.user?.role === 1">
+              <v-select id="department_id" name="department_id" :disabled="deartment_disabled" :items="departments"
+                item-title="name" density="comfortable" item-value="id" prepend-icon="mdi-bank" v-model="department_id"
+                @update:modelValue="getUsers($event)" label="اسماء الاقسام" :error-messages="errors.department_id"
+                variant="outlined"></v-select>
             </v-col>
-            <v-col cols="12" md="4" class="pt-0">
-              <v-select id="user_id" name="user_id" :disabled="user_disabled" :items="users" item-title="name" density="comfortable"
-                item-value="id" prepend-icon="mdi-bank" v-model="user_id"
-                label="اعضاء هيئة التدريس" :error-messages="errors.user_id" variant="underlined"></v-select>
+            <v-col cols="12" :md="colleges && colleges.length > 1 ? 4 : 6" class="pt-0" v-if="authStore?.user?.role === 1">
+              <v-select id="user_id" name="user_id" :disabled="user_disabled" :items="users" item-title="name"
+                density="comfortable" item-value="id" prepend-icon="mdi-bank" v-model="user_id"
+                label="اعضاء هيئة التدريس" :error-messages="errors.user_id" variant="outlined"></v-select>
+            </v-col>
+          
+
+            <v-col cols="12" md="6" class="pt-0">
+              <v-text-field id="title" name="title" label="وصف الصورة  باللغة العربية" v-model="title"
+                prepend-icon="mdi-book-open-page-variant-outline" variant="outlined" :error-messages="errors.title"
+                density="comfortable" maxlength="255" counter="255"></v-text-field>
             </v-col>
             <v-col cols="12" md="6" class="pt-0">
-              <v-text-field id="title" name="title" label="وصف الصورة  باللغة العربية" v-model="title" prepend-icon="mdi-book-open-page-variant-outline"
-                variant="underlined" :error-messages="errors.title"></v-text-field>
+              <v-text-field id="title_en" name="title_en" label="وصف الصورة  باللغة الانجليزية" v-model="title_en"
+                prepend-icon="mdi-book-open-page-variant-outline" variant="outlined" :error-messages="errors.title_en"
+                density="comfortable" maxlength="255" counter="255"></v-text-field>
             </v-col>
-            <v-col cols="12" md="6" class="pt-0">
-              <v-text-field id="title_en" name="title_en" label="وصف الصورة  باللغة الانجليزية" v-model="title_en" prepend-icon="mdi-book-open-page-variant-outline"
-                variant="underlined" :error-messages="errors.title_en"></v-text-field>
-            </v-col>
-            <v-col cols="12" :md="imagePath != undefined ? 3 : 4" class="pt-0">
-              <v-file-input type="file" id="img" name="img" ref="imgInput" show-size chips accept='.jpg,.jpeg,.png' @change="onSelectImage"
-                label="اختر ملف الصورة" variant="underlined" :error-messages="errors.img"></v-file-input>
+            <v-col cols="12" :md="imagePath != '' ? 3 : 4" class="pt-0">
+              <v-file-input type="file" id="img" name="img" v-model="img" show-size chips accept='.jpg,.jpeg,.png'
+                label="اختر ملف الصورة" variant="outlined" :error-messages="errors.img"
+                density="comfortable"></v-file-input>
             </v-col>
 
             <v-divider></v-divider>
 
             <v-card class="mx-auto bg-grey-lighten-4" v-if="album_photos.length > 0">
-                  <v-container fluid>
-                    <v-row dense>
-                      <v-col cols="12" class="mb-4">
-                        <div class="text-red-darken-3">صور البوم</div>
-                      </v-col>
-                      <v-col cols="2" v-for="(element, index) in album_photos" :key="index" class="pa-0">
-                        <v-img :src="BASE_URL + element.thumb_photo" :lazy-src="BASE_URL + element.thumb_photo"
-                          class="align-end" aspect-ratio="4/3" cover style="cursor: pointer">
-                          <!-- @click="showModal(element.photo, element.title)"> -->
-                          <template v-slot:placeholder>
-                            <v-row class="fill-height ma-0" align="center" justify="center">
-                              <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
-                            </v-row>
-                          </template>
-                        </v-img>
-                        <v-checkbox id="active" name="active" hide-details
-                          :value="element.thumb_photo" color="#198754" class="mr-8">
-                          <v-tooltip activator="parent" location="top">اضافة الصورة للخبر</v-tooltip>
-                        </v-checkbox>
-                      </v-col>
-                      <v-col cols="12">
-                        <v-btn block color="green-darken-1" variant="elevated" type="submit" ripple rounded="xl">
-                          موافق
-                        </v-btn>
-                      </v-col>
-                    </v-row>
-                  </v-container>
-                </v-card>
+              <v-container fluid>
+                <v-row density="comfortable">
+                  <v-col cols="12" class="mb-4">
+                    <div class="text-red-darken-3">صور البوم</div>
+                  </v-col>
+                  <v-col cols="2" v-for="(element, index) in album_photos" :key="index" class="pa-0">
+                    <v-img :src="BASE_URL + element.thumb_photo" :lazy-src="BASE_URL + element.thumb_photo"
+                      class="align-end" aspect-ratio="4/3" cover style="cursor: pointer">
+                      <!-- @click="showModal(element.photo, element.title)"> -->
+                      <template v-slot:placeholder>
+                        <v-row class="fill-height ma-0" align="center" justify="center">
+                          <v-progress-circular indeterminate color="grey-lighten-5"></v-progress-circular>
+                        </v-row>
+                      </template>
+                    </v-img>
+                    <v-checkbox id="active" name="active" hide-details :value="element.thumb_photo" color="#198754"
+                      class="mr-8">
+                      <v-tooltip activator="parent" location="top">اضافة الصورة للخبر</v-tooltip>
+                    </v-checkbox>
+                  </v-col>
+                  <v-col cols="12">
+                    <v-btn block color="green-darken-1" variant="elevated" type="submit" ripple rounded="xl">
+                      موافق
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </v-container>
+            </v-card>
 
 
           </v-row>
@@ -73,18 +79,17 @@
   </v-container>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
+import { useAuthStore } from '../store/index';
+const authStore = useAuthStore();
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
-import { z as zod} from 'zod';
-import { nextTick, onBeforeMount, ref } from 'vue';
+import { z as zod } from 'zod';
 import axios from 'axios';
 
-const url = route('staff_academic.index','staff_album_photos')
+const url = route('staff_academic.index', 'staff_album_photos')
 const headers = [
   { title: 'اسم عضو هيئة التدريس', key: 'user.name', align: 'center' },
-  { title: 'عدد الصور', key: 'total_images', align: 'center',sortable: false },
+  { title: 'عدد الصور', key: 'total_images', align: 'center', sortable: false },
   { title: '', key: 'actions', sortable: false },
 ];
 
@@ -98,28 +103,44 @@ interface FormFields {
   title_en: string,
   img: any;
 }
-const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const BASE_URL = window.location.origin + '/';
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png"];
 
-const form_items_types =zod.object({
-    college_id: zod.number({ required_error: "اختر اسم الكلية" }).positive({ message: "اختر اسم الكلية" }),
-    department_id: zod.number({ required_error: "اختر اسم القسم" }).positive({ message: 'اختر اسم القسم' }).nullable(),
-    title: zod.string({ required_error: "ادخل وصف الصورة  باللغة العربية" }).trim().min(1, { message: 'ادخل وصف الصورة  باللغة العربية' }),
-    title_en: zod.string({ required_error: "ادخل وصف الصورة  باللغة الانجليزية" }).trim().min(1, { message: 'ادخل وصف الصورة  باللغة الانجليزية' }),
-    user_id: zod.number({ required_error: "اختر اسم عضو هيئة التدريس" }).positive({ message: "اختر اسم عضو هيئة التدريس" }),
-  });
+const form_items_types = zod.object({
+  college_id: authStore?.user?.role !== 1 ? zod.any().nullish() : zod.number({ required_error: "اختر اسم الكلية" }).positive({ message: "اختر اسم الكلية" }),
+  department_id: authStore?.user?.role !== 1 ? zod.any().nullish() : zod.number({ required_error: "اختر اسم القسم" }).positive({ message: 'اختر اسم القسم' }).nullable(),
+  title: zod.string({ required_error: "ادخل وصف الصورة  باللغة العربية" }).trim().min(1, { message: 'ادخل وصف الصورة  باللغة العربية' }).max(255, { message: "يجب أن لا يتجاوز الوصف 255 حرفاً" }),
+  title_en: zod.string({ required_error: "ادخل وصف الصورة  باللغة الانجليزية" }).trim().min(1, { message: 'ادخل وصف الصورة  باللغة الانجليزية' }).max(255, { message: "يجب أن لا يتجاوز الوصف 255 حرفاً" }),
+  user_id: authStore?.user?.role !== 1 ? zod.any().nullish() : zod.number({ required_error: "اختر اسم عضو هيئة التدريس" }).positive({ message: "اختر اسم عضو هيئة التدريس" }),
+});
 
 const validationSchema = toTypedSchema(zod.union([
   form_items_types.merge(zod.object({
-    img: zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-          .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-         .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`),
+    img: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+      .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+      .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`),
     id: zod.number().negative()
   })),
   form_items_types.merge(zod.object({
-    img: zod.any().refine((files) => files?.length == 1, "اختر الصورة")
-          .refine((files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type), "يتم دعم  فقط .jpg, .jpeg and .png")
-         .refine((files) => files?.[0]?.size <= 5 * 1024 * 1024, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
+    img: zod.any().refine((files) => (!files || files.length === 0) ? id.value > -1 : true, "اختر الصورة")
+      .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (ACCEPTED_IMAGE_TYPES.includes(f.type) || f.name?.toLowerCase().endsWith('.jpg') || f.name?.toLowerCase().endsWith('.jpeg') || f.name?.toLowerCase().endsWith('.png'));
+          }, "يتم دعم  فقط .jpg, .jpeg and .png")
+      .refine((files) => {
+            if (!files || files.length === 0) return true;
+            const f = Array.isArray(files) ? files[0] : files;
+            return f && (f.size || 0) <= 5 * 1024 * 1024;
+          }, `الحد الأقصى لحجم الملف هو 5 ميجابايت`).nullish(),
     id: zod.number().negative().nullish()
   })),
 ]));
@@ -131,9 +152,9 @@ const { handleSubmit, resetForm, errors, setValues, setFieldError } = useForm<Fo
 
 const id = ref(-1);
 const fullscreen = ref(true);
-const colleges = ref();
-const departments = ref();
-const users = ref();
+const colleges = shallowRef();
+const departments = shallowRef([]);
+const users = shallowRef([]);
 
 const deartment_disabled = ref(true);
 const user_disabled = ref(true);
@@ -151,42 +172,42 @@ const { value: title } = useField('title');
 const { value: title_en } = useField('title_en');
 const { value: img } = useField('img');
 
-const save = handleSubmit(async(values) => {
+const save = handleSubmit(async (values) => {
 
   let ErorrMsg = [
-    {'field':'img','message':'يتم دعم  فقط .jpg, .jpeg and .png'},
-    {'field':'item_val','message':'عنوان الكتاب موجود مسبقاً'},
+    { 'field': 'img', 'message': 'يتم دعم  فقط .jpg, .jpeg and .png' },
+    { 'field': 'item_val', 'message': 'عنوان الكتاب موجود مسبقاً' },
   ]
 
   const formData = new FormData();
-  formData.append("user_id", values.user_id.toString())
+  formData.append("user_id", values.user_id ? values.user_id.toString() : '')
   formData.append("title", values.title.toString())
   formData.append("title_en", values.title_en.toString())
-
-  if(imgInput.value.files[0] != undefined){
-    formData.append("img", imgInput.value.files[0])
+  if (img.value) {
+    const f_img = Array.isArray(img.value) ? img.value[0] : img.value;
+    if (f_img) formData.append("img", f_img);
   }
 
   let temp: Array<any> = [];
   table.value.SubmitLoading = true;
-  if(id.value < 0){
-    await axios.post(url,formData,{headers:{'content-type':'multipart/form-data' }}).then(result => {
+  if (id.value < 0) {
+    await axios.post(url, formData, { headers: { 'content-type': 'multipart/form-data' } }).then(result => {
       Object.entries(result.data.message).forEach((item) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
-      table.value.PopulateTable(result.data.status,temp);
-    })
+      table.value.PopulateTable(result.data.status, temp);
+    }).catch(err => { table.value.SubmitLoading = false; console.error(err); })
   }
-  else{
+  else {
     formData.append('_method', 'put');
-    await axios.post(url + "/" + id.value, formData,{headers:{'content-type':'multipart/form-data' }}).then(result => {
+    await axios.post(url + "/" + id.value, formData, { headers: { 'content-type': 'multipart/form-data' } }).then(result => {
       Object.entries(result.data.message).forEach((item) => {
         temp.push(toRaw(ErorrMsg.find((a: any) => a.field == item[0])));
       });
-      table.value.PopulateTable(result.data.status,temp);
-    });
+      table.value.PopulateTable(result.data.status, temp);
+    }).catch(err => { table.value.SubmitLoading = false; console.error(err); });
   }
-  table.value.SubmitLoading = false;
+
   // close();
 });
 
@@ -220,25 +241,27 @@ function close() {
   nextTick(() => {
     id.value = -1
     departments.value.unshift({ 'id': -1, 'name': 'اختر القسم' });
+    imageThumbPath.value = '';
+    photo.value = '';
     department_id.value = -1;
     users.value.unshift({ 'id': -1, 'name': 'اختر عضو هيئة التدريس' });
     user_id.value = -1
     deartment_disabled.value = user_disabled.value = true
-    imagePath.value =undefined
+    imagePath.value = ''
     resetForm();
+    if (colleges.value && colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
   });
   table.value.disableEditButton = false;
   table.value.dialog = false;
 }
 
-function onSelectImage() {
-  img.value = imgInput.value.files
-}
+
 
 async function getColleges() {
   await axios.get(route("colleges.list")).then(response => {
     colleges.value = response.data.colleges;
-  });
+  if (colleges.value.length === 1) { college_id.value = colleges.value[0].id; }
+    });
 }
 
 async function getDepartments(college_id: any) {

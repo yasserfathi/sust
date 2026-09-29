@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\College;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
@@ -12,45 +13,54 @@ class DepartmentsController extends Controller
 {
     public function index(Request $request)
     {
-        $itemsPerPage = htmlspecialchars($request->get('items') ?? 15);
+        $itemsPerPage = (int) htmlspecialchars($request->get('items') ?? 15);
+        if ($itemsPerPage <= 0) {
+            $itemsPerPage = 1000;
+        }
         $search = htmlspecialchars($request->get('search') ?? '');
+        $search = trim(preg_replace('/[+\-><\(\)~*\"@]+/', ' ', $search));
 
-        //Department collection
-        $result_departments = Department::select('id', 'college_id', 'name', 'name_en', 'active');
+        $query = Department::select('departments.id', 'departments.college_id', 'departments.school_id', 'departments.name', 'departments.name_en', 'departments.active')
+            ->with('college:id,name');
+
+        $query->whereHas('college', function ($q) {
+            $q->where('active', '1');
+        });
 
         if (!empty($search)) {
-            $result_departments->where('name', 'like', '%' . $search . '%')
-                ->orWhere('name_en', 'like', '%' . $search . '%');
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('MATCH(departments.name, departments.name_en) AGAINST(? IN BOOLEAN MODE)', [implode(' ', array_map(function($w) { $w = trim(preg_replace('/[+\-\><\(\)~*"@]+/', '', $w)); if (!$w) return ''; $prefixes = ['', 'ال', 'وال', 'بال', 'فال', 'لل', 'كال']; $group = []; foreach($prefixes as $p) { $group[] = $p . $w . '*'; } return '+(' . implode(' ', $group) . ')'; }, explode(' ', $search)))])
+                    ->orWhereHas('college', function ($cq) use ($search) {
+                        $cq->where('name', 'like', '%' . $search . '%')
+                            ->orWhere('name_en', 'like', '%' . $search . '%');
+                    });
+            });
         }
 
-        $result_departments->with('college:id,name')->whereHas('college', function ($query) {
-            $query->where('active', '1');
-        });
+        if ($request->has('orderby') && $request->has('ascend')) {
+            $orderBy = $request->get('orderby');
+            $sortDirection = ($request->get('ascend') === 'true' || $request->get('ascend') === 'asc' || $request->get('ascend') == '1') ? 'asc' : 'desc';
 
-
-        // ===================================
-
-        //Department collection with college Name Search
-        $result_college_name = Department::select('id', 'college_id', 'name', 'name_en', 'active');
-
-        $result_college_name->with('college:id,name')->whereHas('college', function ($query) use ($search) {
-            if (!empty($search)) {
-                $query->where('name', 'like', '%' . $search . '%');
+            if ($orderBy === 'college.name') {
+                $query->join('colleges', 'colleges.id', '=', 'departments.college_id')
+                      ->orderBy('colleges.name', $sortDirection);
+            } else {
+                $query->orderBy('departments.' . ltrim($orderBy, 'departments.'), $sortDirection);
             }
-        });
-
-        $all = $result_departments->get()->merge($result_college_name->get());
-
-        if ($request->exists('orderby') && $request->exists('ascend')) {
-            $all = $all->sortBy([[$request->get('orderby'), $request->get('ascend')]]);
+        } else {
+            $query->orderBy('departments.id', 'desc');
         }
 
-        return response()->json(['result' => $all->paginate((int) $itemsPerPage)], 200);
+        return response()->json(['result' => $query->paginate($itemsPerPage)], 200);
     }
 
     public function show($id)
     {
-        $data = Department::select('*')->where('id', $id)->first()->makeVisible(['college_id']);
+        $data = Department::select('*')->where('id', $id)->first();
+        
+        if ($data) {
+            $data->makeVisible(['college_id', 'school_id']);
+        }
 
         return response()->json(['result' => $data, 'status' => 200]);
     }
@@ -80,6 +90,7 @@ class DepartmentsController extends Controller
         }
 
         $record->college_id = $request->college_id;
+        $record->school_id = $request->school_id;
         $record->name = $request->name;
         $record->name_en = $request->name_en;
         $record->keywords = $request->keywords;
@@ -105,7 +116,24 @@ class DepartmentsController extends Controller
 
     public function list(Request $request)
     {
-        $data = Department::select('id', 'name')->where('college_id', $request->college_id)->where('active', 1)->orderBy('name', 'asc')->get();
+        $query = Department::select('id', 'name')->where('active', 1);
+        
+        if ($request->has('college_id') && $request->college_id) {
+            $query->where('college_id', $request->college_id);
+        } else {
+            $authUser = Auth::user();
+            if ($authUser && $authUser->role != 1) {
+                // If user is not admin, only show departments from their colleges
+                $userColleges = College::where('user_id', $authUser->id)->pluck('id');
+                $query->whereIn('college_id', $userColleges);
+            }
+        }
+
+        if ($request->has('school_id') && $request->school_id) {
+            $query->where('school_id', $request->school_id);
+        }
+        
+        $data = $query->orderBy('name', 'asc')->get();
         return response()->json(['departments' => $data], 200);
     }
 

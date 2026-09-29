@@ -1,2 +1,12 @@
 User-agent: *
-Disallow:
+Disallow: /admin
+Disallow: /admin/
+Disallow: /linkstorage
+Disallow: /clear-cache
+Disallow: /*?*
+Allow: /
+
+# Sitemaps
+Sitemap: https://sustech.edu/sitemap.xml
+Sitemap: https://sustech.edu/sitemap-news.xml
+Sitemap: https://sustech.edu/sitemap-colleges.xml

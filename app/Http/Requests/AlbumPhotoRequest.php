@@ -29,8 +29,8 @@ class AlbumPhotoRequest extends FormRequest
     {
         return [
             'album_id' => 'required|string',
-            'title' => 'required|string',
-            'title_en' => 'required|string',
+            'title' => 'required|string|max:255',
+            'title_en' => 'required|string|max:255',
             'img' => 'nullable|mimes:jpeg,png,jpg',
         ];
     }

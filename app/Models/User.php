@@ -30,7 +30,9 @@ class User extends Authenticatable implements Auditable
         'active',
         'password',
         'auth_id',
-        'user_id'
+        'user_id',
+        'is_college_rep',
+        'slug'
     ];
 
     protected $auditInclude = [
@@ -77,6 +79,21 @@ class User extends Authenticatable implements Auditable
     public function departments()
     {
         return $this->hasMany(Department::class);
+    }
+
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (empty($user->slug) && !empty($user->name_en)) {
+                $user->slug = str_replace(' ', '-', trim($user->name_en));
+            }
+        });
+
+        static::updating(function ($user) {
+            if (!empty($user->name_en)) {
+                $user->slug = str_replace(' ', '-', trim($user->name_en));
+            }
+        });
     }
 
     public static function resolve()

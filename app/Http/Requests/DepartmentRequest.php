@@ -45,6 +45,7 @@ class DepartmentRequest extends FormRequest
             'keywords_ar' => 'required|string|max:1000',
             'description_ar' => 'required|string',
             'college_id' => 'required|integer|exists:colleges,id',
+            'school_id' => 'nullable|integer|exists:schools,id',
         ];
     }
 

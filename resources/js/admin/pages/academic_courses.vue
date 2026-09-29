@@ -1,5 +1,5 @@
 <template>
-    <v-container>
+    <v-container fluid class="px-md-8 px-4">
         <v-card>
             <Table ref="table" :id="id" :url="url" :headers="headers" toolbar_title="المقررات الدراسية"
                 @setFieldError="setFieldError" @save="save" @edit-item="editItem" @close="close"
@@ -10,55 +10,50 @@
                             <v-autocomplete id="program_id" name="program_id" :items="programs"
                                 item-title="program_name" density="comfortable" item-value="id"
                                 prepend-icon="mdi-school" v-model="program_id" label="البرنامج الأكاديمي"
-                                :error-messages="errors.program_id" variant="underlined"></v-autocomplete>
+                                :error-messages="errors.program_id" variant="outlined"></v-autocomplete>
                         </v-col>
                         <v-col cols="12" md="6" class="pt-0">
                             <v-text-field id="course_title" name="course_title" label="اسم المقرر"
-                                v-model="course_title" variant="underlined" class="text-caption"
+                                v-model="course_title" variant="outlined" class="text-caption"
                                 prepend-icon="mdi-book-open-page-variant"
-                                :error-messages="errors.course_title"></v-text-field>
+                                :error-messages="errors.course_title" density="comfortable"></v-text-field>
                         </v-col>
                         <v-col cols="12" md="6" class="pt-0">
                             <v-text-field id="course_code" name="course_code" label="رمز المقرر" v-model="course_code"
-                                variant="underlined" class="text-caption" prepend-icon="mdi-barcode"
-                                :error-messages="errors.course_code"></v-text-field>
+                                variant="outlined" class="text-caption" prepend-icon="mdi-barcode"
+                                :error-messages="errors.course_code" density="comfortable"></v-text-field>
                         </v-col>
                         <v-col cols="12" md="6" class="pt-0">
                             <v-text-field id="course_hours" name="course_hours" label="الساعات" v-model="course_hours"
-                                variant="underlined" class="text-caption" prepend-icon="mdi-clock"
-                                :error-messages="errors.course_hours"></v-text-field>
+                                variant="outlined" class="text-caption" prepend-icon="mdi-clock"
+                                :error-messages="errors.course_hours" density="comfortable"></v-text-field>
                         </v-col>
                         <v-col cols="6" md="3" class="pt-0">
-                            <v-text-field id="year" name="year" label="السنة" v-model="year" variant="underlined"
+                            <v-text-field id="year" name="year" label="السنة" v-model="year" variant="outlined"
                                 type="number" class="text-caption" prepend-icon="mdi-calendar"
-                                :error-messages="errors.year"></v-text-field>
+                                :error-messages="errors.year" density="comfortable"></v-text-field>
                         </v-col>
                         <v-col cols="6" md="3" class="pt-0">
                             <v-select id="semester" name="semester" :items="[1, 2, 3]" label="الفصل" v-model="semester"
-                                variant="underlined" class="text-caption" prepend-icon="mdi-calendar-range"
-                                :error-messages="errors.semester"></v-select>
+                                variant="outlined" class="text-caption" prepend-icon="mdi-calendar-range"
+                                :error-messages="errors.semester" density="comfortable"></v-select>
                         </v-col>
                         <v-col cols="12" md="6" class="pt-0">
-                            <v-select id="lang" name="lang"
-                                :items="[{ text: 'عربي', value: 1 }, { text: 'إنجليزي', value: 2 }]" item-title="text"
-                                item-value="value" label="اللغة" v-model="lang" variant="underlined"
-                                prepend-icon="mdi-translate" :error-messages="errors.lang"></v-select>
+                            <v-select id="lang" name="lang" :items="languages" item-title="name" density="comfortable"
+                                item-value="id" prepend-icon="mdi-abjad-arabic" v-model="lang"
+                                label="لغة المحتوى" :error-messages="errors.lang" variant="outlined"></v-select>
                         </v-col>
-
-                        <v-col cols="12" :md="filePath != undefined ? 5 : 6" class="pt-0">
-                            <v-file-input type="file" id="course_file" name="course_file" ref="fileInput" show-size
-                                @change="onSelectFile" chips label="ملف المقرر (PDF, Docs, Slides)"
-                                accept='.pdf,.doc,.docx,.ppt,.pptx' variant="underlined"
-                                :error-messages="errors.course_file"></v-file-input>
+                        <v-col cols="12" :md="filePath != '' ? 5 : 6" class="pt-0">
+                            <v-file-input type="file" id="course_file" name="course_file" v-model="course_file" show-size chips label="ملف المقرر (PDF, Docs, Slides)" accept='.pdf,.doc,.docx,.ppt,.pptx' variant="outlined" :error-messages="errors.course_file" density="comfortable"></v-file-input>
                         </v-col>
-                        <v-col v-if="filePath != undefined" cols="12" md="1" class="pt-7">
+                        <v-col v-if="filePath != ''" cols="12" md="1" class="pt-7">
                             <a :href="BASE_URL + 'storage/' + filePath" target="_blank"
                                 class="text-subtitle-2">الملف<v-icon icon="mdi-file-document"></v-icon></a>
                         </v-col>
 
                         <v-col cols="12" class="pt-0 mt-0">
-                            <v-textarea label="وصف المقرر (اختياري)" v-model="course_desc" variant="underlined"
-                                rows="2"></v-textarea>
+                            <v-textarea label="وصف المقرر (اختياري)" v-model="course_desc" variant="outlined"
+                                rows="2" density="comfortable"></v-textarea>
                         </v-col>
                     </v-row>
                 </Form>
@@ -67,12 +62,9 @@
     </v-container>
 </template>
 <script lang="ts" setup>
-import { defineAsyncComponent, toRaw } from 'vue'
-const Table = defineAsyncComponent(() => import('../components/Table.vue'))
 import { Form, useField, useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod';
 import { z as zod } from 'zod';
-import { nextTick, onBeforeMount, ref } from 'vue';
 import axios from 'axios';
 
 const url = route('academic_courses.index')
@@ -99,7 +91,7 @@ interface FormFields {
     course_desc: string;
 }
 
-const BASE_URL = import.meta.env.VITE_BASE_URL + '/';
+const BASE_URL = window.location.origin + '/';
 const MAX_FILE_SIZE = 10000000; // 10MB
 
 const validationSchema = toTypedSchema(
@@ -150,9 +142,10 @@ const save = handleSubmit((values) => {
     formData.append("lang", values.lang ? values.lang.toString() : '1')
     if (values.course_desc) formData.append("course_desc", values.course_desc)
 
-    if (fileInput.value && fileInput.value.files[0] != undefined) {
-        formData.append("course_file", fileInput.value.files[0])
-    }
+    if (file.value) {
+    const f = Array.isArray(file.value) ? file.value[0] : file.value;
+    if (f) formData.append("course_file", f);
+  }
 
     if (id.value > -1) {
         formData.append('_method', 'put');
@@ -197,15 +190,13 @@ function close() {
     nextTick(() => {
         id.value = -1
         resetForm();
-        filePath.value = undefined;
+        filePath.value = '';
     });
     table.value.disableEditButton = false;
     table.value.dialog = false;
 }
 
-function onSelectFile() {
-    // logic handled in save
-}
+
 
 async function getPrograms() {
     try {
